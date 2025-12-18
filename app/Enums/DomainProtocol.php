@@ -6,4 +6,5 @@ enum DomainProtocol: string
 {
     case Http = 'http';
     case Https = 'https';
+    case Tcp = 'tcp';
 }

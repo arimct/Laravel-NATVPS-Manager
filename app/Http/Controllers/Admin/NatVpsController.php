@@ -66,11 +66,40 @@ class NatVpsController extends Controller
      * Display the specified NAT VPS.
      * Requirements: 3.4, 4.5
      */
-    public function show(NatVps $natVps)
+    public function show(NatVps $natVps, VirtualizorService $virtualizorService)
     {
         $natVps->load(['server', 'user', 'domainForwardings']);
 
-        return view('admin.nat-vps.show', compact('natVps'));
+        $liveInfo = null;
+        $apiOffline = false;
+        $vdfCount = 0;
+
+        if ($natVps->server) {
+            try {
+                // Get live VPS info from API
+                $liveInfo = $virtualizorService->getVpsInfo($natVps->server, $natVps->vps_id);
+                
+                if ($liveInfo) {
+                    // Update cached specs
+                    $natVps->update([
+                        'cached_specs' => $liveInfo->toArray(),
+                        'specs_cached_at' => now(),
+                    ]);
+                } else {
+                    $apiOffline = true;
+                }
+
+                // Get VDF count from Virtualizor API
+                $forwardings = $virtualizorService->getDomainForwarding($natVps->server, $natVps->vps_id);
+                $vdfCount = count($forwardings);
+            } catch (\Exception $e) {
+                $apiOffline = true;
+            }
+        } else {
+            $apiOffline = true;
+        }
+
+        return view('admin.nat-vps.show', compact('natVps', 'vdfCount', 'liveInfo', 'apiOffline'));
     }
 
     /**
@@ -248,5 +277,80 @@ class NatVpsController extends Controller
         $servers = Server::where('is_active', true)->orderBy('name')->get();
 
         return view('admin.nat-vps.import', compact('servers'));
+    }
+
+    /**
+     * Start the specified VPS.
+     */
+    public function start(NatVps $natVps, VirtualizorService $virtualizorService)
+    {
+        return $this->performPowerAction($natVps, 'start', $virtualizorService);
+    }
+
+    /**
+     * Stop the specified VPS.
+     */
+    public function stop(NatVps $natVps, VirtualizorService $virtualizorService)
+    {
+        return $this->performPowerAction($natVps, 'stop', $virtualizorService);
+    }
+
+    /**
+     * Restart the specified VPS.
+     */
+    public function restart(NatVps $natVps, VirtualizorService $virtualizorService)
+    {
+        return $this->performPowerAction($natVps, 'restart', $virtualizorService);
+    }
+
+    /**
+     * Power off the specified VPS.
+     */
+    public function poweroff(NatVps $natVps, VirtualizorService $virtualizorService)
+    {
+        return $this->performPowerAction($natVps, 'poweroff', $virtualizorService);
+    }
+
+    /**
+     * Perform a power action on the VPS.
+     */
+    protected function performPowerAction(NatVps $natVps, string $action, VirtualizorService $virtualizorService)
+    {
+        if (!$natVps->server) {
+            return redirect()
+                ->route('admin.nat-vps.show', $natVps)
+                ->with('error', 'Cannot perform action: VPS has no associated server.');
+        }
+
+        $actionLabels = [
+            'start' => 'started',
+            'stop' => 'stopped',
+            'restart' => 'restarted',
+            'poweroff' => 'powered off',
+        ];
+
+        try {
+            $result = match ($action) {
+                'start' => $virtualizorService->startVps($natVps->server, $natVps->vps_id),
+                'stop' => $virtualizorService->stopVps($natVps->server, $natVps->vps_id),
+                'restart' => $virtualizorService->restartVps($natVps->server, $natVps->vps_id),
+                'poweroff' => $virtualizorService->poweroffVps($natVps->server, $natVps->vps_id),
+                default => throw new \InvalidArgumentException("Unknown action: {$action}"),
+            };
+
+            if ($result->success) {
+                return redirect()
+                    ->route('admin.nat-vps.show', $natVps)
+                    ->with('success', "VPS has been {$actionLabels[$action]} successfully.");
+            }
+
+            return redirect()
+                ->route('admin.nat-vps.show', $natVps)
+                ->with('error', $result->message ?? "Failed to {$action} VPS.");
+        } catch (\Exception $e) {
+            return redirect()
+                ->route('admin.nat-vps.show', $natVps)
+                ->with('error', "Failed to {$action} VPS: " . $e->getMessage());
+        }
     }
 }

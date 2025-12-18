@@ -1,18 +1,14 @@
 <?php
 
-namespace App\Http\Controllers\User;
+namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\DomainForwarding;
 use App\Models\NatVps;
+use App\Enums\DomainProtocol;
 use App\Services\Virtualizor\VirtualizorService;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
 
-/**
- * Controller for managing domain forwarding (VDF) rules for users.
- */
 class DomainForwardingController extends Controller
 {
     public function __construct(
@@ -22,12 +18,14 @@ class DomainForwardingController extends Controller
     /**
      * Display domain forwarding for a NAT VPS - data from Virtualizor API.
      */
-    public function index(NatVps $natVps): View
+    public function index(NatVps $natVps)
     {
+        $natVps->load(['server']);
+        
         $forwardings = [];
         $portConfig = [];
         $apiError = null;
-
+        
         if ($natVps->server) {
             try {
                 $data = $this->virtualizorService->getDomainForwardingWithConfig(
@@ -41,13 +39,13 @@ class DomainForwardingController extends Controller
             }
         }
 
-        return view('user.vps.domain-forwarding.index', compact('natVps', 'forwardings', 'portConfig', 'apiError'));
+        return view('admin.nat-vps.domain-forwarding', compact('natVps', 'forwardings', 'portConfig', 'apiError'));
     }
 
     /**
      * Store a new domain forwarding rule.
      */
-    public function store(Request $request, NatVps $natVps): RedirectResponse
+    public function store(Request $request, NatVps $natVps)
     {
         $validated = $request->validate([
             'domain' => ['nullable', 'string', 'max:255'],
@@ -60,6 +58,7 @@ class DomainForwardingController extends Controller
             return redirect()->back()->with('error', 'NAT VPS has no associated server.');
         }
 
+        // Create via Virtualizor API
         $result = $this->virtualizorService->createDomainForwarding(
             $natVps->server,
             $natVps->vps_id,
@@ -76,7 +75,7 @@ class DomainForwardingController extends Controller
     /**
      * Update a domain forwarding rule.
      */
-    public function update(Request $request, NatVps $natVps, int $recordId): RedirectResponse
+    public function update(Request $request, NatVps $natVps, int $recordId)
     {
         $validated = $request->validate([
             'domain' => ['nullable', 'string', 'max:255'],
@@ -89,6 +88,7 @@ class DomainForwardingController extends Controller
             return redirect()->back()->with('error', 'NAT VPS has no associated server.');
         }
 
+        // Update via Virtualizor API
         $result = $this->virtualizorService->updateDomainForwarding(
             $natVps->server,
             $natVps->vps_id,
@@ -106,12 +106,13 @@ class DomainForwardingController extends Controller
     /**
      * Delete a domain forwarding rule by Virtualizor record ID.
      */
-    public function destroy(NatVps $natVps, int $recordId): RedirectResponse
+    public function destroy(NatVps $natVps, int $recordId)
     {
         if (!$natVps->server) {
             return redirect()->back()->with('error', 'NAT VPS has no associated server.');
         }
 
+        // Delete via Virtualizor API
         $result = $this->virtualizorService->deleteDomainForwarding(
             $natVps->server,
             $natVps->vps_id,
@@ -121,6 +122,11 @@ class DomainForwardingController extends Controller
         if (!$result->success) {
             return redirect()->back()->with('error', $result->message);
         }
+
+        // Also delete local record if exists
+        DomainForwarding::where('nat_vps_id', $natVps->id)
+            ->where('virtualizor_record_id', $recordId)
+            ->delete();
 
         return redirect()->back()->with('success', 'Domain forwarding rule deleted successfully.');
     }

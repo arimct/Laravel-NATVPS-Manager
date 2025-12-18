@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <div class="flex items-center">
-            <a href="{{ route('user.vps.show', $natVps) }}" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mr-4">
+            <a href="{{ route('admin.nat-vps.show', $natVps) }}" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mr-4">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
                 </svg>
@@ -71,7 +71,7 @@
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg mb-6">
                 <div class="p-6">
                     <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Add Forwarding Rule</h3>
-                    <form action="{{ route('user.vps.domain-forwarding.store', $natVps) }}" method="POST">
+                    <form action="{{ route('admin.nat-vps.domain-forwarding.store', $natVps) }}" method="POST">
                         @csrf
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
@@ -188,7 +188,7 @@
                                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                                                             </svg>
                                                         </button>
-                                                        <form action="{{ route('user.vps.domain-forwarding.destroy', [$natVps, $recordId]) }}" method="POST" class="inline" onsubmit="return confirm('Delete this rule?')">
+                                                        <form action="{{ route('admin.nat-vps.domain-forwarding.destroy', [$natVps, $recordId]) }}" method="POST" class="inline" onsubmit="return confirm('Delete this rule?')">
                                                             @csrf
                                                             @method('DELETE')
                                                             <button type="submit" class="text-red-600 hover:text-red-900 dark:text-red-400">
@@ -262,7 +262,7 @@
 
     <script>
         function openEditModal(recordId, protocol, domain, srcPort, destPort) {
-            document.getElementById('editForm').action = '{{ route("user.vps.domain-forwarding.index", $natVps) }}/' + recordId;
+            document.getElementById('editForm').action = '{{ route("admin.nat-vps.domain-forwarding.index", $natVps) }}/' + recordId;
             document.getElementById('edit_protocol').value = protocol;
             document.getElementById('edit_domain').value = domain === '-' ? '' : domain;
             document.getElementById('edit_source_port').value = srcPort;
@@ -283,6 +283,7 @@
             const protocolHint = document.getElementById('protocol-hint');
             
             if (protocol === 'tcp') {
+                // TCP - hide domain field, clear ports
                 domainField.style.display = 'none';
                 domainInput.value = '';
                 domainInput.removeAttribute('required');
@@ -293,6 +294,7 @@
                 sourcePortHint.textContent = 'External port (e.g., 30000-65000)';
                 protocolHint.textContent = 'TCP: Forward external port to internal VPS port.';
             } else if (protocol === 'http') {
+                // HTTP - show domain field, set default ports
                 domainField.style.display = 'block';
                 domainInput.setAttribute('required', 'required');
                 sourcePortInput.value = '80';
@@ -302,6 +304,7 @@
                 sourcePortHint.textContent = 'Default: 80 for HTTP';
                 protocolHint.textContent = 'HTTP: Forward domain traffic on port 80 to VPS.';
             } else {
+                // HTTPS - show domain field, set default ports
                 domainField.style.display = 'block';
                 domainInput.setAttribute('required', 'required');
                 sourcePortInput.value = '443';
@@ -313,6 +316,7 @@
             }
         }
         
+        // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
             toggleDomainField(document.getElementById('protocol').value);
         });

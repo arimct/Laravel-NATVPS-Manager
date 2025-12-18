@@ -49,7 +49,7 @@ class VirtualizorService implements VirtualizorServiceInterface
             }
 
             // Log the full response for debugging
-            Log::debug('Virtualizor listvs response', ['result' => $result]);
+            // Log::debug('Virtualizor listvs response', ['result' => $result]);
 
             // Count VPS - check both 'vs' and 'vps' keys
             $vpsCount = 0;
@@ -255,16 +255,66 @@ class VirtualizorService implements VirtualizorServiceInterface
      */
     public function getDomainForwarding(Server $server, int $vpsId): array
     {
+        $data = $this->getDomainForwardingWithConfig($server, $vpsId);
+        return $data['forwardings'] ?? [];
+    }
+
+    /**
+     * Get domain forwarding with server config (port restrictions).
+     */
+    public function getDomainForwardingWithConfig(Server $server, int $vpsId): array
+    {
         try {
             $client = $this->createClient($server);
             $result = $client->vdf(['svs' => $vpsId]);
 
             if ($result === false) {
-                return [];
+                return ['forwardings' => [], 'config' => []];
             }
 
-            // Return the VDF records if available
-            return $result['vdf'] ?? $result['vdf_records'] ?? [];
+            // Get forwarding records
+            $forwardings = [];
+            if (isset($result['haproxydata']) && is_array($result['haproxydata'])) {
+                $forwardings = array_values($result['haproxydata']);
+            } elseif (isset($result['vdf']) && is_array($result['vdf'])) {
+                $forwardings = array_values($result['vdf']);
+            }
+
+            // Get port configuration from server_haconfigs
+            $config = [];
+            $srcIps = $result['arr_haproxy_src_ips'] ?? [];
+            if (isset($result['server_haconfigs']) && is_array($result['server_haconfigs'])) {
+                $haConfig = $result['server_haconfigs'][0] ?? [];
+                $config = [
+                    'reserved_ports' => $haConfig['haproxy_reservedports'] ?? '',
+                    'reserved_ports_http' => $haConfig['haproxy_reservedports_http'] ?? '',
+                    'allowed_ports' => $haConfig['haproxy_allowedports'] ?? '',
+                    'src_ips' => $srcIps,
+                ];
+            }
+
+            // Get dest_ip from vpses data
+            $destIp = '';
+            if (isset($result['vpses']) && is_array($result['vpses'])) {
+                foreach ($result['vpses'] as $vps) {
+                    if (isset($vps['ips']) && is_array($vps['ips'])) {
+                        foreach ($vps['ips'] as $ipData) {
+                            $ip = $ipData['ip'] ?? $ipData;
+                            if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) && strpos($ip, '10.') === 0) {
+                                $destIp = $ip;
+                                break 2;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return [
+                'forwardings' => $forwardings,
+                'config' => $config,
+                'src_ip' => $srcIps[0] ?? '',
+                'dest_ip' => $destIp,
+            ];
         } catch (\Exception $e) {
             Log::error('Failed to get domain forwarding', [
                 'server_id' => $server->id,
@@ -272,7 +322,7 @@ class VirtualizorService implements VirtualizorServiceInterface
                 'error' => $e->getMessage(),
             ]);
 
-            return [];
+            return ['forwardings' => [], 'config' => []];
         }
     }
 
@@ -284,30 +334,57 @@ class VirtualizorService implements VirtualizorServiceInterface
         try {
             $client = $this->createClient($server);
             
+            $protocol = strtoupper($data['protocol'] ?? 'HTTP');
+            
+            // Based on Virtualizor API docs: https://www.virtualizor.com/docs/enduser-api/add-domain-forwarding/
+            // First get VDF config to get src_ip and dest_ip
+            $vdfData = $this->getDomainForwardingWithConfig($server, $vpsId);
+            $srcIp = $vdfData['src_ip'] ?? '';
+            $destIp = $vdfData['dest_ip'] ?? '';
+
+            // For TCP, src_hostname should be the haproxy source IP
+            // For HTTP/HTTPS, src_hostname should be the domain
+            $srcHostname = $data['domain'] ?? '';
+            if ($protocol === 'TCP' && empty($srcHostname)) {
+                $srcHostname = $srcIp;
+            }
+
             $post = [
                 'svs' => $vpsId,
-                'add_vdf' => 1,
-                'src_hostname' => $data['domain'] ?? '',
-                'protocol' => $data['protocol'] ?? 'http',
-                'src_port' => $data['source_port'] ?? 80,
-                'dest_port' => $data['destination_port'] ?? 80,
+                'vdf_action' => 'addvdf',
+                'src_hostname' => $srcHostname,
+                'protocol' => $protocol,
+                'src_port' => (string) ($data['source_port'] ?? 80),
+                'dest_ip' => $destIp,
+                'dest_port' => (string) ($data['destination_port'] ?? 80),
             ];
 
+            Log::debug('Creating VDF rule', ['post' => $post]);
+
             $result = $client->vdf($post);
+
+            Log::debug('VDF create response', ['result' => $result]);
 
             if ($result === false) {
                 return ActionResult::failure('Failed to create domain forwarding rule');
             }
 
             if (isset($result['error']) && !empty($result['error'])) {
-                $errorMsg = is_array($result['error']) ? implode(', ', $result['error']) : $result['error'];
+                $errorMsg = is_array($result['error']) 
+                    ? (is_array($result['error']['action'] ?? null) ? implode(', ', $result['error']) : ($result['error']['action'] ?? implode(', ', $result['error'])))
+                    : $result['error'];
                 return ActionResult::failure('API error: ' . $errorMsg, ['error' => $result['error']]);
             }
 
             if (isset($result['done']) && $result['done']) {
                 return ActionResult::success('Domain forwarding rule created successfully', [
-                    'record_id' => $result['vdf_id'] ?? null,
+                    'record_id' => $result['vdf_id'] ?? $result['newid'] ?? null,
                 ]);
+            }
+
+            // Check if haproxydata was updated (success indicator)
+            if (isset($result['haproxydata'])) {
+                return ActionResult::success('Domain forwarding rule created successfully');
             }
 
             return ActionResult::failure('Failed to create domain forwarding rule');
@@ -331,23 +408,36 @@ class VirtualizorService implements VirtualizorServiceInterface
         try {
             $client = $this->createClient($server);
             
+            // Based on Virtualizor API docs for delete VDF
             $post = [
                 'svs' => $vpsId,
-                'delete' => $recordId,
+                'vdf_action' => 'delvdf',
+                'vdfid' => $recordId,
             ];
 
+            Log::debug('Deleting VDF rule', ['post' => $post]);
+
             $result = $client->vdf($post);
+
+            Log::debug('VDF delete response', ['result' => $result]);
 
             if ($result === false) {
                 return ActionResult::failure('Failed to delete domain forwarding rule');
             }
 
             if (isset($result['error']) && !empty($result['error'])) {
-                $errorMsg = is_array($result['error']) ? implode(', ', $result['error']) : $result['error'];
+                $errorMsg = is_array($result['error']) 
+                    ? ($result['error']['action'] ?? implode(', ', $result['error']))
+                    : $result['error'];
                 return ActionResult::failure('API error: ' . $errorMsg, ['error' => $result['error']]);
             }
 
             if (isset($result['done']) && $result['done']) {
+                return ActionResult::success('Domain forwarding rule deleted successfully');
+            }
+
+            // Check if the record is no longer in haproxydata (success indicator)
+            if (isset($result['haproxydata']) && !isset($result['haproxydata'][$recordId])) {
                 return ActionResult::success('Domain forwarding rule deleted successfully');
             }
 
@@ -361,6 +451,79 @@ class VirtualizorService implements VirtualizorServiceInterface
             ]);
 
             return ActionResult::failure('Failed to delete domain forwarding: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Update a domain forwarding rule.
+     */
+    public function updateDomainForwarding(Server $server, int $vpsId, int $recordId, array $data): ActionResult
+    {
+        try {
+            $client = $this->createClient($server);
+            
+            $protocol = strtoupper($data['protocol'] ?? 'TCP');
+            
+            // Get VDF config to get src_ip and dest_ip
+            $vdfData = $this->getDomainForwardingWithConfig($server, $vpsId);
+            $srcIp = $vdfData['src_ip'] ?? '';
+            $destIp = $vdfData['dest_ip'] ?? '';
+
+            // For TCP, src_hostname should be the haproxy source IP
+            // For HTTP/HTTPS, src_hostname should be the domain
+            $srcHostname = $data['domain'] ?? '';
+            if ($protocol === 'TCP' && empty($srcHostname)) {
+                $srcHostname = $srcIp;
+            }
+
+            $post = [
+                'svs' => $vpsId,
+                'vdf_action' => 'editvdf',
+                'vdfid' => $recordId,
+                'src_hostname' => $srcHostname,
+                'protocol' => $protocol,
+                'src_port' => (string) ($data['source_port'] ?? 80),
+                'dest_ip' => $destIp,
+                'dest_port' => (string) ($data['destination_port'] ?? 80),
+            ];
+
+            Log::debug('Updating VDF rule', ['post' => $post]);
+
+            $result = $client->vdf($post);
+
+            Log::debug('VDF update response', ['result' => $result]);
+
+            if ($result === false) {
+                return ActionResult::failure('Failed to update domain forwarding rule');
+            }
+
+            if (isset($result['error']) && !empty($result['error'])) {
+                $errorMsg = is_array($result['error']) 
+                    ? ($result['error']['action'] ?? implode(', ', $result['error']))
+                    : $result['error'];
+                return ActionResult::failure('API error: ' . $errorMsg, ['error' => $result['error']]);
+            }
+
+            if (isset($result['done']) && $result['done']) {
+                return ActionResult::success('Domain forwarding rule updated successfully');
+            }
+
+            // Check if haproxydata exists (success indicator)
+            if (isset($result['haproxydata'])) {
+                return ActionResult::success('Domain forwarding rule updated successfully');
+            }
+
+            return ActionResult::failure('Failed to update domain forwarding rule');
+        } catch (\Exception $e) {
+            Log::error('Failed to update domain forwarding', [
+                'server_id' => $server->id,
+                'vps_id' => $vpsId,
+                'record_id' => $recordId,
+                'data' => $data,
+                'error' => $e->getMessage(),
+            ]);
+
+            return ActionResult::failure('Failed to update domain forwarding: ' . $e->getMessage());
         }
     }
 }
