@@ -84,8 +84,8 @@ app/
 
 ## TODO
 
-- [ ] Authentication system (login/logout)
-- [ ] Admin middleware
+- [x] Authentication system (login/logout)
+- [x] Admin middleware
 - [ ] Virtualizor API service wrapper
 - [ ] Server CRUD (Admin)
 - [ ] NAT VPS CRUD (Admin)
