@@ -1,84 +1,105 @@
 # NAT VPS Manager
 
-A Laravel-based web application for managing Virtualizor NAT VPS instances across multiple servers.
+A Laravel-based web application for managing Virtualizor NAT VPS instances across multiple servers. Built with Laravel 12, Tailwind CSS, and Alpine.js.
 
 ## Features
 
-- Multi-server Virtualizor API integration
+### Admin Features
+- **Server Management** - Add, edit, delete Virtualizor servers with API credentials
+- **NAT VPS Management** - Create, update, delete NAT VPS records
+- **User Management** - Create users, assign VPS, reset passwords
+- **Dashboard** - Overview of servers, VPS instances, and system health
+
+### User Features
+- **VPS Overview** - View assigned NAT VPS with specs (CPU, RAM, disk, bandwidth)
+- **Power Actions** - Start, stop, restart, poweroff VPS instances
+- **Domain Forwarding** - Manage HTTP/HTTPS VDF rules
+- **SSH Credentials** - View stored SSH access information
+
+### Security
 - Role-based access control (Admin/User)
-- NAT VPS lifecycle management with power actions (start, stop, restart, poweroff)
-- Domain forwarding (VDF) configuration
-- Secure credential storage with encryption
-- Mobile-responsive UI using Tailwind CSS + Alpine.js
+- Encrypted storage for API keys and SSH credentials
+- Session-based authentication
 
 ## Requirements
 
 - PHP 8.2+
 - Composer
-- Node.js & NPM
+- Node.js 18+ & NPM
 - MySQL 8.0+
 
 ## Installation
 
-1. Clone the repository
 ```bash
+# Clone repository
 git clone https://github.com/iam-rizz/Laravel-NATVPS-Manager.git
 cd Laravel-NATVPS-Manager
-```
 
-2. Install PHP dependencies
-```bash
+# Install dependencies
 composer install
-```
-
-3. Install Node dependencies
-```bash
 npm install
-```
 
-4. Copy environment file and configure
-```bash
+# Environment setup
 cp .env.example .env
-```
-
-5. Generate application key
-```bash
 php artisan key:generate
-```
 
-6. Configure database in `.env`
-```
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=nat_vps_manager
-DB_USERNAME=your_username
-DB_PASSWORD=your_password
-```
+# Configure database in .env
+# DB_DATABASE=nat_vps_manager
+# DB_USERNAME=your_username
+# DB_PASSWORD=your_password
 
-7. Run migrations
-```bash
+# Run migrations
 php artisan migrate
-```
 
-8. Build assets
-```bash
+# Build assets
 npm run build
+
+# Start server
+php artisan serve
 ```
 
-9. Start the development server
-```bash
-php artisan serve
+## Project Structure
+
+```
+app/
+├── Enums/
+│   ├── UserRole.php          # Admin/User roles
+│   └── DomainProtocol.php    # HTTP/HTTPS protocols
+├── Models/
+│   ├── User.php              # User with role
+│   ├── Server.php            # Virtualizor server
+│   ├── NatVps.php            # NAT VPS instance
+│   └── DomainForwarding.php  # VDF rules
+├── Libraries/
+│   └── Virtualizor/
+│       └── enduser.php       # Virtualizor API wrapper
 ```
 
 ## Tech Stack
 
-- Laravel 12
-- Tailwind CSS
-- Alpine.js
-- MySQL
-- Virtualizor Enduser API
+- **Backend**: Laravel 12
+- **Frontend**: Tailwind CSS, Alpine.js
+- **Database**: MySQL
+- **API**: Virtualizor Enduser API
+
+## TODO
+
+- [ ] Authentication system (login/logout)
+- [ ] Admin middleware
+- [ ] Virtualizor API service wrapper
+- [ ] Server CRUD (Admin)
+- [ ] NAT VPS CRUD (Admin)
+- [ ] User management (Admin)
+- [ ] User VPS view & power actions
+- [ ] Domain forwarding management
+- [ ] Admin & User dashboards
+- [ ] Mobile responsive layout
+- [ ] Database seeder with default admin
+
+## Contributing
+
+Pull requests are welcome. For major changes, please open an issue first.
 
 ## License
 
-MIT License
+[MIT](LICENSE)
