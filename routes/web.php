@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\User\DashboardController as UserDashboardController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -35,7 +37,10 @@ Route::middleware('auth')->group(function () {
     
     // Dashboard - redirects based on role
     Route::get('dashboard', function () {
-        return view('dashboard');
+        if (auth()->user()->isAdmin()) {
+            return redirect()->route('admin.dashboard');
+        }
+        return redirect()->route('user.dashboard');
     })->name('dashboard');
 });
 
@@ -46,6 +51,9 @@ Route::middleware('auth')->group(function () {
 */
 
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+    // Admin Dashboard (Requirement 10.1, 10.2, 10.3)
+    Route::get('dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+    
     // Server management routes (to be implemented in task 5)
     Route::resource('servers', \App\Http\Controllers\Admin\ServerController::class)->except(['show']);
     Route::post('servers/{server}/test-connection', [\App\Http\Controllers\Admin\ServerController::class, 'testConnection'])
@@ -71,19 +79,27 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 */
 
 Route::middleware('auth')->prefix('user')->name('user.')->group(function () {
-    // VPS viewing and power actions (to be implemented in task 10)
-    Route::get('vps', [\App\Http\Controllers\User\VpsController::class, 'index'])->name('vps.index');
-    Route::get('vps/{natVps}', [\App\Http\Controllers\User\VpsController::class, 'show'])->name('vps.show');
-    Route::post('vps/{natVps}/start', [\App\Http\Controllers\User\VpsController::class, 'start'])->name('vps.start');
-    Route::post('vps/{natVps}/stop', [\App\Http\Controllers\User\VpsController::class, 'stop'])->name('vps.stop');
-    Route::post('vps/{natVps}/restart', [\App\Http\Controllers\User\VpsController::class, 'restart'])->name('vps.restart');
-    Route::post('vps/{natVps}/poweroff', [\App\Http\Controllers\User\VpsController::class, 'poweroff'])->name('vps.poweroff');
+    // User Dashboard (Requirement 10.4)
+    Route::get('dashboard', [UserDashboardController::class, 'index'])->name('dashboard');
     
-    // Domain forwarding routes (to be implemented in task 11)
-    Route::get('vps/{natVps}/domain-forwarding', [\App\Http\Controllers\User\DomainForwardingController::class, 'index'])
-        ->name('vps.domain-forwarding.index');
-    Route::post('vps/{natVps}/domain-forwarding', [\App\Http\Controllers\User\DomainForwardingController::class, 'store'])
-        ->name('vps.domain-forwarding.store');
-    Route::delete('vps/{natVps}/domain-forwarding/{domainForwarding}', [\App\Http\Controllers\User\DomainForwardingController::class, 'destroy'])
-        ->name('vps.domain-forwarding.destroy');
+    // VPS list (no specific VPS access check needed)
+    Route::get('vps', [\App\Http\Controllers\User\VpsController::class, 'index'])->name('vps.index');
+    
+    // VPS-specific routes with access middleware
+    Route::middleware('vps.access')->group(function () {
+        // VPS viewing and power actions (to be implemented in task 10)
+        Route::get('vps/{natVps}', [\App\Http\Controllers\User\VpsController::class, 'show'])->name('vps.show');
+        Route::post('vps/{natVps}/start', [\App\Http\Controllers\User\VpsController::class, 'start'])->name('vps.start');
+        Route::post('vps/{natVps}/stop', [\App\Http\Controllers\User\VpsController::class, 'stop'])->name('vps.stop');
+        Route::post('vps/{natVps}/restart', [\App\Http\Controllers\User\VpsController::class, 'restart'])->name('vps.restart');
+        Route::post('vps/{natVps}/poweroff', [\App\Http\Controllers\User\VpsController::class, 'poweroff'])->name('vps.poweroff');
+        
+        // Domain forwarding routes (to be implemented in task 11)
+        Route::get('vps/{natVps}/domain-forwarding', [\App\Http\Controllers\User\DomainForwardingController::class, 'index'])
+            ->name('vps.domain-forwarding.index');
+        Route::post('vps/{natVps}/domain-forwarding', [\App\Http\Controllers\User\DomainForwardingController::class, 'store'])
+            ->name('vps.domain-forwarding.store');
+        Route::delete('vps/{natVps}/domain-forwarding/{domainForwarding}', [\App\Http\Controllers\User\DomainForwardingController::class, 'destroy'])
+            ->name('vps.domain-forwarding.destroy');
+    });
 });

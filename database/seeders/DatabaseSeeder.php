@@ -2,9 +2,10 @@
 
 namespace Database\Seeders;
 
+use App\Enums\UserRole;
 use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
@@ -13,11 +14,43 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        // Create default admin user
+        $this->createAdminUser();
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        // Optionally seed sample data for development
+        if (app()->environment('local', 'development')) {
+            $this->seedSampleData();
+        }
+    }
+
+    /**
+     * Create the default admin user.
+     */
+    private function createAdminUser(): void
+    {
+        User::firstOrCreate(
+            ['email' => 'admin@example.com'],
+            [
+                'name' => 'Administrator',
+                'password' => Hash::make('password'),
+                'role' => UserRole::Admin,
+            ]
+        );
+    }
+
+    /**
+     * Seed sample data for development environment.
+     */
+    private function seedSampleData(): void
+    {
+        // Create a sample regular user if it doesn't exist
+        User::firstOrCreate(
+            ['email' => 'user@example.com'],
+            [
+                'name' => 'Test User',
+                'password' => Hash::make('password'),
+                'role' => UserRole::User,
+            ]
+        );
     }
 }

@@ -89,12 +89,12 @@ app/
 - [x] Virtualizor API service wrapper
 - [x] Server CRUD (Admin)
 - [x] NAT VPS CRUD (Admin)
-- [ ] User management (Admin)
-- [ ] User VPS view & power actions
-- [ ] Domain forwarding management
-- [ ] Admin & User dashboards
-- [ ] Mobile responsive layout
-- [ ] Database seeder with default admin
+- [x] User management (Admin)
+- [x] User VPS view & power actions
+- [x] Domain forwarding management
+- [x] Admin & User dashboards
+- [x] Mobile responsive layout
+- [x] Database seeder with default admin
 
 ## Contributing
 

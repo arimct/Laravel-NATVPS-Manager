@@ -1,0 +1,207 @@
+<x-app-layout>
+    <x-slot name="header">
+        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
+            My VPS Instances
+        </h2>
+    </x-slot>
+
+    <div class="py-12">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            @if(session('success'))
+                <div class="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative dark:bg-green-900 dark:border-green-700 dark:text-green-300" role="alert">
+                    <span class="block sm:inline">{{ session('success') }}</span>
+                </div>
+            @endif
+
+            @if(session('error'))
+                <div class="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative dark:bg-red-900 dark:border-red-700 dark:text-red-300" role="alert">
+                    <span class="block sm:inline">{{ session('error') }}</span>
+                </div>
+            @endif
+
+            @if(!empty($apiErrors))
+                <div class="mb-4 bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative dark:bg-yellow-900 dark:border-yellow-700 dark:text-yellow-300" role="alert">
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                        <span>API connection issues for: {{ implode(', ', $apiErrors) }}. Showing cached data where available.</span>
+                    </div>
+                </div>
+            @endif
+
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6 text-gray-900 dark:text-gray-100">
+                    @if(empty($vpsWithSpecs))
+                        <div class="text-center py-8">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/>
+                            </svg>
+                            <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">No VPS instances</h3>
+                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">You don't have any VPS instances assigned to you.</p>
+                        </div>
+                    @else
+                        <!-- Desktop Table View -->
+                        <div class="hidden md:block overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead class="bg-gray-50 dark:bg-gray-700">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Hostname</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">VPS ID</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">CPU</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">RAM</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Disk</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Bandwidth</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                    @foreach($vpsWithSpecs as $vpsData)
+                                        @php
+                                            $natVps = $vpsData['natVps'];
+                                            $liveInfo = $vpsData['liveInfo'];
+                                            $apiOffline = $vpsData['apiOffline'];
+                                            $cachedSpecs = $natVps->cached_specs;
+                                        @endphp
+                                        <tr>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <div class="flex items-center">
+                                                    <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ $natVps->hostname }}</div>
+                                                    @if($apiOffline)
+                                                        <span class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200" title="API Offline - Showing cached data">
+                                                            Cached
+                                                        </span>
+                                                    @endif
+                                                </div>
+                                                @if($liveInfo && $liveInfo->uuid)
+                                                    <div class="text-xs text-gray-500 dark:text-gray-400 font-mono">{{ $liveInfo->uuid }}</div>
+                                                @elseif($cachedSpecs && isset($cachedSpecs['uuid']))
+                                                    <div class="text-xs text-gray-500 dark:text-gray-400 font-mono">{{ $cachedSpecs['uuid'] }}</div>
+                                                @endif
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <div class="text-sm text-gray-500 dark:text-gray-400">{{ $natVps->vps_id }}</div>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <div class="text-sm text-gray-500 dark:text-gray-400">
+                                                    {{ $liveInfo?->cpu ?? $cachedSpecs['cpu'] ?? '-' }} {{ ($liveInfo?->cpu ?? $cachedSpecs['cpu'] ?? null) ? 'Core(s)' : '' }}
+                                                </div>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <div class="text-sm text-gray-500 dark:text-gray-400">
+                                                    @php
+                                                        $ram = $liveInfo?->ram ?? $cachedSpecs['ram'] ?? null;
+                                                    @endphp
+                                                    {{ $ram ? $ram . ' MB' : '-' }}
+                                                </div>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <div class="text-sm text-gray-500 dark:text-gray-400">
+                                                    @php
+                                                        $disk = $liveInfo?->disk ?? $cachedSpecs['disk'] ?? null;
+                                                    @endphp
+                                                    {{ $disk ? $disk . ' GB' : '-' }}
+                                                </div>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <div class="text-sm text-gray-500 dark:text-gray-400">
+                                                    @php
+                                                        $bandwidth = $liveInfo?->bandwidth ?? $cachedSpecs['bandwidth'] ?? null;
+                                                        $usedBandwidth = $liveInfo?->usedBandwidth ?? $cachedSpecs['used_bandwidth'] ?? null;
+                                                    @endphp
+                                                    @if($bandwidth)
+                                                        {{ $usedBandwidth ?? 0 }} / {{ $bandwidth }} GB
+                                                    @else
+                                                        -
+                                                    @endif
+                                                </div>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                @php
+                                                    $status = $liveInfo?->status ?? $cachedSpecs['status'] ?? null;
+                                                @endphp
+                                                @if($status === 1)
+                                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                                        Running
+                                                    </span>
+                                                @elseif($status === 0)
+                                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                                                        Stopped
+                                                    </span>
+                                                @else
+                                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                                                        Unknown
+                                                    </span>
+                                                @endif
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                <a href="{{ route('user.vps.show', $natVps) }}" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300">
+                                                    View Details
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Mobile Card View -->
+                        <div class="md:hidden space-y-4">
+                            @foreach($vpsWithSpecs as $vpsData)
+                                @php
+                                    $natVps = $vpsData['natVps'];
+                                    $liveInfo = $vpsData['liveInfo'];
+                                    $apiOffline = $vpsData['apiOffline'];
+                                    $cachedSpecs = $natVps->cached_specs;
+                                    $status = $liveInfo?->status ?? $cachedSpecs['status'] ?? null;
+                                @endphp
+                                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                                    <div class="flex justify-between items-start mb-3">
+                                        <div>
+                                            <h3 class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ $natVps->hostname }}</h3>
+                                            <p class="text-sm text-gray-500 dark:text-gray-400">VPS ID: {{ $natVps->vps_id }}</p>
+                                            @if($liveInfo && $liveInfo->uuid)
+                                                <p class="text-xs text-gray-500 dark:text-gray-400 font-mono">{{ $liveInfo->uuid }}</p>
+                                            @endif
+                                        </div>
+                                        <div class="flex items-center space-x-2">
+                                            @if($apiOffline)
+                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                                                    Cached
+                                                </span>
+                                            @endif
+                                            @if($status === 1)
+                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                                    Running
+                                                </span>
+                                            @elseif($status === 0)
+                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                                                    Stopped
+                                                </span>
+                                            @else
+                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-300">
+                                                    Unknown
+                                                </span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-2 text-sm text-gray-500 dark:text-gray-400 mb-3">
+                                        <div>CPU: {{ $liveInfo?->cpu ?? $cachedSpecs['cpu'] ?? '-' }} Core(s)</div>
+                                        <div>RAM: {{ ($liveInfo?->ram ?? $cachedSpecs['ram'] ?? null) ? ($liveInfo?->ram ?? $cachedSpecs['ram']) . ' MB' : '-' }}</div>
+                                        <div>Disk: {{ ($liveInfo?->disk ?? $cachedSpecs['disk'] ?? null) ? ($liveInfo?->disk ?? $cachedSpecs['disk']) . ' GB' : '-' }}</div>
+                                        <div>BW: {{ ($liveInfo?->bandwidth ?? $cachedSpecs['bandwidth'] ?? null) ? (($liveInfo?->usedBandwidth ?? $cachedSpecs['used_bandwidth'] ?? 0) . '/' . ($liveInfo?->bandwidth ?? $cachedSpecs['bandwidth']) . ' GB') : '-' }}</div>
+                                    </div>
+                                    <a href="{{ route('user.vps.show', $natVps) }}" 
+                                       class="w-full inline-flex justify-center items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700">
+                                        View Details
+                                    </a>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+</x-app-layout>
