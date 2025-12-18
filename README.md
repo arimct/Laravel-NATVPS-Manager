@@ -87,8 +87,8 @@ app/
 - [x] Authentication system (login/logout)
 - [x] Admin middleware
 - [x] Virtualizor API service wrapper
-- [ ] Server CRUD (Admin)
-- [ ] NAT VPS CRUD (Admin)
+- [x] Server CRUD (Admin)
+- [x] NAT VPS CRUD (Admin)
 - [ ] User management (Admin)
 - [ ] User VPS view & power actions
 - [ ] Domain forwarding management
