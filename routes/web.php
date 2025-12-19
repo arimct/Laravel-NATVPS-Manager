@@ -100,15 +100,17 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('nat-vps-import/{server}', [\App\Http\Controllers\Admin\NatVpsController::class, 'importFromServer'])
         ->name('nat-vps.import.server');
     
-    // Admin NAT VPS Power Actions
-    Route::post('nat-vps/{natVps}/start', [\App\Http\Controllers\Admin\NatVpsController::class, 'start'])
-        ->name('nat-vps.start');
-    Route::post('nat-vps/{natVps}/stop', [\App\Http\Controllers\Admin\NatVpsController::class, 'stop'])
-        ->name('nat-vps.stop');
-    Route::post('nat-vps/{natVps}/restart', [\App\Http\Controllers\Admin\NatVpsController::class, 'restart'])
-        ->name('nat-vps.restart');
-    Route::post('nat-vps/{natVps}/poweroff', [\App\Http\Controllers\Admin\NatVpsController::class, 'poweroff'])
-        ->name('nat-vps.poweroff');
+    // Admin NAT VPS Power Actions with rate limiting (10 per minute)
+    Route::middleware('throttle:vps-actions')->group(function () {
+        Route::post('nat-vps/{natVps}/start', [\App\Http\Controllers\Admin\NatVpsController::class, 'start'])
+            ->name('nat-vps.start');
+        Route::post('nat-vps/{natVps}/stop', [\App\Http\Controllers\Admin\NatVpsController::class, 'stop'])
+            ->name('nat-vps.stop');
+        Route::post('nat-vps/{natVps}/restart', [\App\Http\Controllers\Admin\NatVpsController::class, 'restart'])
+            ->name('nat-vps.restart');
+        Route::post('nat-vps/{natVps}/poweroff', [\App\Http\Controllers\Admin\NatVpsController::class, 'poweroff'])
+            ->name('nat-vps.poweroff');
+    });
     
     // Admin NAT VPS Resource Usage API (async loading)
     Route::get('nat-vps/{natVps}/resource-usage', [\App\Http\Controllers\Admin\NatVpsController::class, 'resourceUsage'])
