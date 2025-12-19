@@ -82,6 +82,11 @@ class VpsController extends Controller
             $vpsWithSpecs[] = $vpsData;
         }
 
+        // Flash warning if there are API errors
+        if (!empty($apiErrors)) {
+            session()->flash('warning', 'API connection issues for: ' . implode(', ', $apiErrors) . '. Showing cached data where available.');
+        }
+
         return view('user.vps.index', [
             'vpsWithSpecs' => $vpsWithSpecs,
             'apiErrors' => $apiErrors,
@@ -128,6 +133,15 @@ class VpsController extends Controller
         if ($natVps->server && !$natVps->server->location_data) {
             $this->geoLocationService->getLocationForServer($natVps->server);
             $natVps->load('server'); // Reload to get updated location
+        }
+
+        // Flash warning if API is offline
+        if ($apiOffline) {
+            $message = 'API is currently unavailable. Showing cached data.';
+            if ($natVps->specs_cached_at) {
+                $message .= ' Last updated: ' . $natVps->specs_cached_at->diffForHumans();
+            }
+            session()->flash('warning', $message);
         }
 
         // Resource usage will be loaded via AJAX for better page performance
@@ -188,15 +202,17 @@ class VpsController extends Controller
         if (!$natVps->server) {
             return redirect()
                 ->route('user.vps.show', $natVps)
-                ->with('error', 'Cannot perform action: VPS has no associated server.');
+                ->with('error', 'Unable to perform action. This VPS is not connected to any server. Please contact support.');
         }
 
         $actionLabels = [
-            'start' => 'started',
-            'stop' => 'stopped',
-            'restart' => 'restarted',
-            'poweroff' => 'powered off',
+            'start' => ['past' => 'started', 'present' => 'Starting', 'icon' => '▶️'],
+            'stop' => ['past' => 'stopped', 'present' => 'Stopping', 'icon' => '⏹️'],
+            'restart' => ['past' => 'restarted', 'present' => 'Restarting', 'icon' => '🔄'],
+            'poweroff' => ['past' => 'powered off', 'present' => 'Powering off', 'icon' => '⏻'],
         ];
+
+        $label = $actionLabels[$action] ?? ['past' => $action, 'present' => ucfirst($action), 'icon' => ''];
 
         try {
             $result = match ($action) {
@@ -210,22 +226,78 @@ class VpsController extends Controller
             if ($result->success) {
                 return redirect()
                     ->route('user.vps.show', $natVps)
-                    ->with('success', "VPS has been {$actionLabels[$action]} successfully.");
+                    ->with('success', "Your VPS \"{$natVps->hostname}\" has been {$label['past']} successfully. Changes may take a few seconds to reflect.");
             }
 
+            // Parse API error for user-friendly message
+            $errorMessage = $this->parseApiError($result->message, $action);
+            
             return redirect()
                 ->route('user.vps.show', $natVps)
-                ->with('error', $result->message ?? "Failed to {$action} VPS.");
+                ->with('error', $errorMessage);
         } catch (\Exception $e) {
             Log::error("Failed to {$action} VPS", [
                 'nat_vps_id' => $natVps->id,
                 'error' => $e->getMessage(),
             ]);
 
+            // Provide user-friendly error based on exception type
+            $errorMessage = $this->getExceptionMessage($e, $action);
+
             return redirect()
                 ->route('user.vps.show', $natVps)
-                ->with('error', "Failed to {$action} VPS: " . $e->getMessage());
+                ->with('error', $errorMessage);
         }
+    }
+
+    /**
+     * Parse API error message into user-friendly format.
+     */
+    protected function parseApiError(?string $message, string $action): string
+    {
+        if (empty($message)) {
+            return "Unable to {$action} VPS. Please try again or contact support if the issue persists.";
+        }
+
+        // Common error patterns
+        $patterns = [
+            '/already running/i' => 'VPS is already running. No action needed.',
+            '/already stopped/i' => 'VPS is already stopped. No action needed.',
+            '/not running/i' => 'VPS is not currently running.',
+            '/permission denied/i' => 'You do not have permission to perform this action.',
+            '/timeout/i' => 'The operation timed out. Please try again.',
+            '/connection refused/i' => 'Unable to connect to the server. Please try again later.',
+        ];
+
+        foreach ($patterns as $pattern => $friendlyMessage) {
+            if (preg_match($pattern, $message)) {
+                return $friendlyMessage;
+            }
+        }
+
+        return "Unable to {$action} VPS: {$message}";
+    }
+
+    /**
+     * Get user-friendly message from exception.
+     */
+    protected function getExceptionMessage(\Exception $e, string $action): string
+    {
+        $message = $e->getMessage();
+
+        if (str_contains($message, 'Connection refused') || str_contains($message, 'Could not connect')) {
+            return 'Unable to connect to the server. The server may be temporarily unavailable. Please try again later.';
+        }
+
+        if (str_contains($message, 'timed out') || str_contains($message, 'timeout')) {
+            return 'The operation timed out. The server may be busy. Please try again in a few moments.';
+        }
+
+        if (str_contains($message, 'authentication') || str_contains($message, 'unauthorized')) {
+            return 'Authentication failed. Please contact support.';
+        }
+
+        return "An unexpected error occurred while trying to {$action} your VPS. Please try again or contact support.";
     }
 
     /**

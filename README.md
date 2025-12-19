@@ -695,10 +695,10 @@ class ActionResult {
 
 ### Version 1.1 (In Progress)
 
-- [ ] VPS resource usage graphs (CPU, RAM, Network)
+- [x] VPS resource usage graphs (CPU, RAM, Network)
 - [ ] Email notifications for VPS events
 - [ ] API rate limiting and request throttling
-- [ ] Improved error messages and user feedback
+- [x] Improved error messages and user feedback (Toastify)
 
 ### Version 1.2 (Planned)
 

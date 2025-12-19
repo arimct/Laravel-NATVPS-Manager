@@ -107,6 +107,15 @@ class NatVpsController extends Controller
             $natVps->load('server'); // Reload to get updated location
         }
 
+        // Flash warning if API is offline
+        if ($apiOffline) {
+            $message = 'API is currently unavailable. Showing cached data.';
+            if ($natVps->specs_cached_at) {
+                $message .= ' Last updated: ' . $natVps->specs_cached_at->diffForHumans();
+            }
+            session()->flash('warning', $message);
+        }
+
         // Resource usage will be loaded via AJAX for better page performance
         return view('admin.nat-vps.show', compact('natVps', 'vdfCount', 'liveInfo', 'apiOffline'));
     }

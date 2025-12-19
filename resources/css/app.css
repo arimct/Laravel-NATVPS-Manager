@@ -1,3 +1,206 @@
+@import 'toastify-js/src/toastify.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Toast Notifications */
+.toastify {
+    padding: 0 !important;
+    background: none !important;
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1) !important;
+    border-radius: 0.5rem !important;
+    max-width: 380px !important;
+    min-width: 320px !important;
+}
+
+.toast-content {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.toast-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.toast-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.toast-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    opacity: 0.5;
+    font-size: 1rem;
+    line-height: 1;
+    padding: 0;
+    transition: opacity 0.2s;
+}
+
+.toast-close:hover {
+    opacity: 1;
+}
+
+.toast-body {
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+/* Toast Progress Bar */
+.toast-progress {
+    height: 4px;
+    width: 100%;
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 0 0 0.5rem 0.5rem;
+    overflow: hidden;
+}
+
+.toast-progress-bar {
+    height: 100%;
+    width: 100%;
+    animation: toast-progress linear forwards;
+}
+
+@keyframes toast-progress {
+    from { width: 100%; }
+    to { width: 0%; }
+}
+
+/* Progress bar colors */
+.toast-success .toast-progress-bar {
+    background: linear-gradient(90deg, #10b981, #059669);
+}
+
+.toast-error .toast-progress-bar {
+    background: linear-gradient(90deg, #ef4444, #dc2626);
+}
+
+.toast-warning .toast-progress-bar {
+    background: linear-gradient(90deg, #f59e0b, #d97706);
+}
+
+.toast-info .toast-progress-bar {
+    background: linear-gradient(90deg, #3b82f6, #2563eb);
+}
+
+/* Success Toast */
+.toast-success {
+    background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%) !important;
+    border: 1px solid #a7f3d0 !important;
+}
+
+.toast-success .toast-header {
+    color: #065f46;
+    border-bottom-color: #a7f3d0;
+}
+
+.toast-success .toast-body {
+    color: #047857;
+}
+
+.toast-success .toast-close {
+    color: #065f46;
+}
+
+/* Error Toast */
+.toast-error {
+    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%) !important;
+    border: 1px solid #fecaca !important;
+}
+
+.toast-error .toast-header {
+    color: #991b1b;
+    border-bottom-color: #fecaca;
+}
+
+.toast-error .toast-body {
+    color: #b91c1c;
+}
+
+.toast-error .toast-close {
+    color: #991b1b;
+}
+
+/* Warning Toast */
+.toast-warning {
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%) !important;
+    border: 1px solid #fde68a !important;
+}
+
+.toast-warning .toast-header {
+    color: #92400e;
+    border-bottom-color: #fde68a;
+}
+
+.toast-warning .toast-body {
+    color: #b45309;
+}
+
+.toast-warning .toast-close {
+    color: #92400e;
+}
+
+/* Info Toast */
+.toast-info {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%) !important;
+    border: 1px solid #bfdbfe !important;
+}
+
+.toast-info .toast-header {
+    color: #1e40af;
+    border-bottom-color: #bfdbfe;
+}
+
+.toast-info .toast-body {
+    color: #1d4ed8;
+}
+
+.toast-info .toast-close {
+    color: #1e40af;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .toast-success {
+        background: linear-gradient(135deg, #064e3b 0%, #065f46 100%) !important;
+        border-color: #047857 !important;
+    }
+    .toast-success .toast-header { color: #a7f3d0; border-bottom-color: #047857; }
+    .toast-success .toast-body { color: #6ee7b7; }
+    .toast-success .toast-close { color: #a7f3d0; }
+
+    .toast-error {
+        background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%) !important;
+        border-color: #b91c1c !important;
+    }
+    .toast-error .toast-header { color: #fecaca; border-bottom-color: #b91c1c; }
+    .toast-error .toast-body { color: #fca5a5; }
+    .toast-error .toast-close { color: #fecaca; }
+
+    .toast-warning {
+        background: linear-gradient(135deg, #78350f 0%, #92400e 100%) !important;
+        border-color: #b45309 !important;
+    }
+    .toast-warning .toast-header { color: #fde68a; border-bottom-color: #b45309; }
+    .toast-warning .toast-body { color: #fcd34d; }
+    .toast-warning .toast-close { color: #fde68a; }
+
+    .toast-info {
+        background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%) !important;
+        border-color: #1d4ed8 !important;
+    }
+    .toast-info .toast-header { color: #bfdbfe; border-bottom-color: #1d4ed8; }
+    .toast-info .toast-body { color: #93c5fd; }
+    .toast-info .toast-close { color: #bfdbfe; }
+}

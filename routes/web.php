@@ -15,6 +15,27 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+// Test toast notifications (remove in production)
+Route::get('/test-toast', function () {
+    return redirect('/')->with('success', 'This is a success message!');
+});
+Route::get('/test-toast-warning', function () {
+    return redirect('/')->with('warning', 'This is a warning message!');
+});
+Route::get('/test-toast-error', function () {
+    return redirect('/')->with('error', 'This is an error message!');
+});
+
+// Test toast in authenticated pages
+Route::middleware('auth')->group(function () {
+    Route::get('/test-admin-toast', function () {
+        return redirect()->route('admin.nat-vps.index')->with('success', 'Test success message from admin!');
+    });
+    Route::get('/test-user-toast', function () {
+        return redirect()->route('user.vps.index')->with('warning', 'Test warning message from user!');
+    });
+});
+
 /*
 |--------------------------------------------------------------------------
 | Guest Routes (unauthenticated users only)
@@ -37,10 +58,18 @@ Route::middleware('auth')->group(function () {
     
     // Dashboard - redirects based on role
     Route::get('dashboard', function () {
-        if (auth()->user()->isAdmin()) {
-            return redirect()->route('admin.dashboard');
+        // Preserve flash messages during role-based redirect
+        $flashData = [];
+        foreach (['success', 'error', 'warning', 'info'] as $key) {
+            if (session()->has($key)) {
+                $flashData[$key] = session($key);
+            }
         }
-        return redirect()->route('user.dashboard');
+        
+        if (auth()->user()->isAdmin()) {
+            return redirect()->route('admin.dashboard')->with($flashData);
+        }
+        return redirect()->route('user.dashboard')->with($flashData);
     })->name('dashboard');
 });
 

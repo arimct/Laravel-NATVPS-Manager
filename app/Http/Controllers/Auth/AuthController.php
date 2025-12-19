@@ -30,13 +30,17 @@ class AuthController extends Controller
 
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
+            
+            // Flash message before redirect to ensure it persists
+            session()->flash('success', 'Welcome back, ' . Auth::user()->name . '!');
 
             return redirect()->intended('dashboard');
         }
 
         return back()->withErrors([
             'email' => 'The provided credentials do not match our records.',
-        ])->onlyInput('email');
+        ])->onlyInput('email')
+            ->with('error', 'Invalid email or password. Please try again.');
     }
 
     /**
@@ -49,6 +53,6 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect('/login');
+        return redirect('/login')->with('success', 'You have been logged out successfully.');
     }
 }
