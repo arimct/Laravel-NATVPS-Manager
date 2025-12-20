@@ -50,6 +50,22 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(10)->by($request->user()?->id ?: $request->ip());
         });
         
+        // Two-factor authentication attempts: 5 per minute per session
+        // Requirements: 7.5 - Rate limiting to prevent brute force attacks
+        RateLimiter::for('two-factor', function (Request $request) {
+            // Use session ID for rate limiting during 2FA challenge
+            // This prevents brute force attacks on the 2FA verification
+            $sessionId = $request->session()->getId();
+            $userId = $request->session()->get('two_factor:user_id');
+            
+            return Limit::perMinute(5)
+                ->by($userId ? "2fa:{$userId}" : "2fa:session:{$sessionId}")
+                ->response(function () {
+                    return redirect()->back()
+                        ->with('error', __('app.2fa_rate_limited'));
+                });
+        });
+        
         // General API: 60 per minute per user
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());

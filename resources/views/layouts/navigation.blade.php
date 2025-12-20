@@ -104,6 +104,9 @@
                          class="absolute right-0 z-50 mt-2 w-48 rounded-md shadow-lg origin-top-right"
                          style="display: none;">
                         <div class="rounded-md ring-1 ring-black ring-opacity-5 py-1 bg-white dark:bg-gray-700">
+                            <a href="{{ route('two-factor.setup') }}" class="block px-4 py-2 text-sm leading-5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-800 transition duration-150 ease-in-out {{ request()->routeIs('two-factor.*') ? 'bg-gray-100 dark:bg-gray-800' : '' }}">
+                                {{ __('app.security') }}
+                            </a>
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
                                 <button type="submit" class="block w-full px-4 py-2 text-start text-sm leading-5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-800 transition duration-150 ease-in-out">
@@ -182,6 +185,11 @@
                         </a>
                     </div>
                 </div>
+
+                <a href="{{ route('two-factor.setup') }}" 
+                   class="block w-full ps-3 pe-4 py-2 border-l-4 {{ request()->routeIs('two-factor.*') ? 'border-indigo-400 dark:border-indigo-600 text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/50' : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-600' }} text-start text-base font-medium focus:outline-none transition duration-150 ease-in-out">
+                    {{ __('app.security') }}
+                </a>
 
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf

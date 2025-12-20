@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Auth\TwoFactorChallengeController;
+use App\Http\Controllers\Auth\TwoFactorController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\User\DashboardController as UserDashboardController;
@@ -53,6 +55,26 @@ Route::middleware('guest')->group(function () {
 
 /*
 |--------------------------------------------------------------------------
+| Two-Factor Authentication Challenge Routes (during login)
+|--------------------------------------------------------------------------
+| These routes handle 2FA verification during the login process.
+| The user has provided valid credentials but needs to complete 2FA.
+| Requirements: 2.1, 2.2, 2.3, 2.4, 3.1, 3.2, 3.3, 7.5
+*/
+
+Route::middleware('guest')->group(function () {
+    Route::get('two-factor/challenge', [TwoFactorChallengeController::class, 'show'])
+        ->name('two-factor.challenge');
+    Route::post('two-factor/challenge', [TwoFactorChallengeController::class, 'verify'])
+        ->middleware('throttle:two-factor')
+        ->name('two-factor.verify');
+    Route::post('two-factor/recovery', [TwoFactorChallengeController::class, 'verifyRecovery'])
+        ->middleware('throttle:two-factor')
+        ->name('two-factor.recovery');
+});
+
+/*
+|--------------------------------------------------------------------------
 | Authenticated Routes
 |--------------------------------------------------------------------------
 */
@@ -75,6 +97,27 @@ Route::middleware('auth')->group(function () {
         }
         return redirect()->route('user.dashboard')->with($flashData);
     })->name('dashboard');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Two-Factor Authentication Management Routes
+|--------------------------------------------------------------------------
+| These routes handle 2FA setup, enable/disable, and recovery code management.
+| Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 4.1, 4.2, 4.3, 4.4, 5.1, 5.2, 5.3, 5.4
+*/
+
+Route::middleware(['auth', 'two-factor'])->group(function () {
+    Route::get('two-factor/setup', [TwoFactorController::class, 'setup'])
+        ->name('two-factor.setup');
+    Route::post('two-factor/enable', [TwoFactorController::class, 'enable'])
+        ->name('two-factor.enable');
+    Route::post('two-factor/disable', [TwoFactorController::class, 'disable'])
+        ->name('two-factor.disable');
+    Route::get('two-factor/recovery-codes', [TwoFactorController::class, 'showRecoveryCodes'])
+        ->name('two-factor.recovery-codes');
+    Route::post('two-factor/recovery-codes', [TwoFactorController::class, 'regenerateRecoveryCodes'])
+        ->name('two-factor.recovery-codes.regenerate');
 });
 
 /*

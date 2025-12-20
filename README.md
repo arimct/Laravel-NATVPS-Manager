@@ -807,7 +807,7 @@ class ActionResult {
 ### Version 1.3 (Planned)
 
 - [x] Multi-language support (English, Indonesian)
-- [ ] Two-factor authentication (2FA)
+- [x] Two-factor authentication (2FA)
 - [ ] User activity audit logging
 - [ ] Bulk VPS operations
 - [ ] Export data to CSV/Excel

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\AdminMiddleware;
+use App\Http\Middleware\EnsureTwoFactorAuthenticated;
 use App\Http\Middleware\SetLocale;
 use App\Http\Middleware\VpsAccessMiddleware;
 use Illuminate\Foundation\Application;
@@ -22,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'admin' => AdminMiddleware::class,
             'vps.access' => VpsAccessMiddleware::class,
+            'two-factor' => EnsureTwoFactorAuthenticated::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
