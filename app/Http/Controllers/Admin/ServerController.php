@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Server;
+use App\Services\AuditLogService;
 use App\Services\Virtualizor\Contracts\VirtualizorServiceInterface;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -12,7 +13,8 @@ use Illuminate\Validation\Rule;
 class ServerController extends Controller
 {
     public function __construct(
-        protected VirtualizorServiceInterface $virtualizorService
+        protected VirtualizorServiceInterface $virtualizorService,
+        protected AuditLogService $auditLogService
     ) {}
 
     /**
@@ -38,7 +40,7 @@ class ServerController extends Controller
 
     /**
      * Store a newly created server in storage.
-     * Requirements: 2.1
+     * Requirements: 2.1, 5.1
      */
     public function store(Request $request)
     {
@@ -56,6 +58,22 @@ class ServerController extends Controller
 
         $server = Server::create($validated);
 
+        // Log server creation
+        $this->auditLogService->log(
+            'server.created',
+            $request->user(),
+            $server,
+            [
+                'new' => [
+                    'id' => $server->id,
+                    'name' => $server->name,
+                    'ip_address' => $server->ip_address,
+                    'port' => $server->port,
+                    'is_active' => $server->is_active,
+                ],
+            ]
+        );
+
         return redirect()
             ->route('admin.servers.index')
             ->with('success', "Server '{$server->name}' created successfully.");
@@ -72,7 +90,7 @@ class ServerController extends Controller
 
     /**
      * Update the specified server in storage.
-     * Requirements: 2.2
+     * Requirements: 2.2, 5.2
      */
     public function update(Request $request, Server $server)
     {
@@ -88,6 +106,14 @@ class ServerController extends Controller
         $validated['port'] = $validated['port'] ?? 4083;
         $validated['is_active'] = $request->boolean('is_active', true);
 
+        // Capture old values before update
+        $oldValues = [
+            'name' => $server->name,
+            'ip_address' => $server->ip_address,
+            'port' => $server->port,
+            'is_active' => $server->is_active,
+        ];
+
         // Only update credentials if provided (allow keeping existing)
         if (empty($validated['api_key'])) {
             unset($validated['api_key']);
@@ -98,6 +124,22 @@ class ServerController extends Controller
 
         $server->update($validated);
 
+        // Capture new values after update
+        $newValues = [
+            'name' => $server->name,
+            'ip_address' => $server->ip_address,
+            'port' => $server->port,
+            'is_active' => $server->is_active,
+        ];
+
+        // Log server update with old and new values
+        $this->auditLogService->log(
+            'server.updated',
+            $request->user(),
+            $server,
+            AuditLogService::makeUpdateProperties($oldValues, $newValues)
+        );
+
         return redirect()
             ->route('admin.servers.index')
             ->with('success', "Server '{$server->name}' updated successfully.");
@@ -105,12 +147,31 @@ class ServerController extends Controller
 
     /**
      * Remove the specified server from storage.
-     * Requirements: 2.3
+     * Requirements: 2.3, 5.3
      */
-    public function destroy(Server $server)
+    public function destroy(Request $request, Server $server)
     {
         $serverName = $server->name;
         
+        // Capture server details before deletion for audit log
+        $deletedServerDetails = [
+            'id' => $server->id,
+            'name' => $server->name,
+            'ip_address' => $server->ip_address,
+            'port' => $server->port,
+            'is_active' => $server->is_active,
+        ];
+
+        // Log server deletion before actually deleting
+        $this->auditLogService->log(
+            'server.deleted',
+            $request->user(),
+            $server,
+            [
+                'deleted' => $deletedServerDetails,
+            ]
+        );
+
         // Disassociate NAT VPS instances before deleting
         $server->natVps()->update(['server_id' => null]);
         
@@ -123,15 +184,30 @@ class ServerController extends Controller
 
     /**
      * Test connection to the specified server.
-     * Requirements: 2.5
+     * Requirements: 2.5, 5.4
      */
-    public function testConnection(Server $server)
+    public function testConnection(Request $request, Server $server)
     {
         try {
             $result = $this->virtualizorService->testConnection($server);
             
             // Update last_checked timestamp
             $server->update(['last_checked' => now()]);
+
+            // Log connection test with result
+            $this->auditLogService->log(
+                'server.connection_test',
+                $request->user(),
+                $server,
+                AuditLogService::makeActionProperties(
+                    $result->success ? 'success' : 'failure',
+                    $result->success ? null : $result->message,
+                    [
+                        'server_id' => $server->id,
+                        'server_name' => $server->name,
+                    ]
+                )
+            );
 
             if ($result->success) {
                 return response()->json([
@@ -151,6 +227,21 @@ class ServerController extends Controller
                 'server_id' => $server->id,
                 'error' => $e->getMessage(),
             ]);
+
+            // Log failed connection test
+            $this->auditLogService->log(
+                'server.connection_test',
+                $request->user(),
+                $server,
+                AuditLogService::makeActionProperties(
+                    'failure',
+                    $e->getMessage(),
+                    [
+                        'server_id' => $server->id,
+                        'server_name' => $server->name,
+                    ]
+                )
+            );
 
             return response()->json([
                 'success' => false,

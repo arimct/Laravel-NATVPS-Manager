@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Events\TwoFactorFailed;
+use App\Events\TwoFactorSuccess;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\TwoFactorAuthService;
@@ -65,8 +67,12 @@ class TwoFactorChallengeController extends Controller
 
         // Verify the TOTP code
         if (!$this->twoFactorService->verifyCode($user, $request->code)) {
+            TwoFactorFailed::dispatch($user);
             return back()->with('error', __('app.2fa_invalid_code'));
         }
+
+        // Dispatch 2FA success event
+        TwoFactorSuccess::dispatch($user);
 
         // Complete the login
         $this->completeLogin($request, $user);
@@ -101,8 +107,12 @@ class TwoFactorChallengeController extends Controller
 
         // Verify and consume the recovery code
         if (!$this->twoFactorService->verifyRecoveryCode($user, $request->recovery_code)) {
+            TwoFactorFailed::dispatch($user);
             return back()->with('error', __('app.2fa_invalid_recovery'));
         }
+
+        // Dispatch 2FA success event
+        TwoFactorSuccess::dispatch($user);
 
         // Complete the login
         $this->completeLogin($request, $user);

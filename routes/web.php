@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\TwoFactorChallengeController;
 use App\Http\Controllers\Auth\TwoFactorController;
+use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\User\DashboardController as UserDashboardController;
@@ -198,7 +199,16 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::get('email-templates/{emailTemplate}/edit', [\App\Http\Controllers\Admin\EmailTemplateController::class, 'edit'])->name('email-templates.edit');
         Route::put('email-templates/{emailTemplate}', [\App\Http\Controllers\Admin\EmailTemplateController::class, 'update'])->name('email-templates.update');
         Route::get('email-templates/{emailTemplate}/preview', [\App\Http\Controllers\Admin\EmailTemplateController::class, 'preview'])->name('email-templates.preview');
+        
+        // Audit log settings
+        Route::get('audit', [\App\Http\Controllers\Admin\SettingController::class, 'audit'])->name('audit');
+        Route::put('audit', [\App\Http\Controllers\Admin\SettingController::class, 'updateAudit'])->name('audit.update');
     });
+    
+    // Audit Logs routes (Requirements: 7.1, 7.2, 7.3, 7.4, 7.5)
+    Route::get('audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
+    Route::get('audit-logs/export', [AuditLogController::class, 'export'])->name('audit-logs.export');
+    Route::get('audit-logs/{auditLog}', [AuditLogController::class, 'show'])->name('audit-logs.show');
 });
 
 /*

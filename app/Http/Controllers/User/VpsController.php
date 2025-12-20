@@ -4,6 +4,7 @@ namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
 use App\Models\NatVps;
+use App\Services\AuditLogService;
 use App\Services\GeoLocation\GeoLocationService;
 use App\Services\MailService;
 use App\Services\Virtualizor\Contracts\VirtualizorServiceInterface;
@@ -11,6 +12,7 @@ use App\Services\Virtualizor\DTOs\VpsInfo;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
@@ -23,7 +25,8 @@ class VpsController extends Controller
 {
     public function __construct(
         protected VirtualizorServiceInterface $virtualizorService,
-        protected GeoLocationService $geoLocationService
+        protected GeoLocationService $geoLocationService,
+        protected AuditLogService $auditLogService
     ) {}
 
     /**
@@ -197,6 +200,7 @@ class VpsController extends Controller
      * Perform a power action on the VPS.
      * 
      * Requirements: 6.5 - Display error message with details from API response
+     * Audit Requirements: 4.1, 4.2, 4.3, 4.4 - Log VPS power actions
      */
     protected function performPowerAction(NatVps $natVps, string $action): RedirectResponse
     {
@@ -205,6 +209,8 @@ class VpsController extends Controller
                 ->route('user.vps.show', $natVps)
                 ->with('error', __('app.vps_no_server'));
         }
+
+        $user = Auth::user();
 
         try {
             $result = match ($action) {
@@ -215,11 +221,23 @@ class VpsController extends Controller
                 default => throw new \InvalidArgumentException("Unknown action: {$action}"),
             };
 
+            // Log the VPS power action with result status
+            $this->auditLogService->log(
+                "vps.{$action}",
+                $user,
+                $natVps,
+                AuditLogService::makeActionProperties(
+                    $result->success ? 'success' : 'failure',
+                    $result->success ? null : $result->message,
+                    ['vps_id' => $natVps->vps_id, 'hostname' => $natVps->hostname]
+                )
+            );
+
             if ($result->success) {
                 // Send power action notification to VPS owner
                 if ($natVps->user) {
                     $mailService = app(MailService::class);
-                    $mailService->sendVpsPowerAction($natVps->user, $natVps, $action, auth()->user()?->name ?? 'System');
+                    $mailService->sendVpsPowerAction($natVps->user, $natVps, $action, Auth::user()?->name ?? 'System');
                 }
                 
                 $successMessage = match ($action) {
@@ -246,6 +264,18 @@ class VpsController extends Controller
                 'nat_vps_id' => $natVps->id,
                 'error' => $e->getMessage(),
             ]);
+
+            // Log the failed VPS power action
+            $this->auditLogService->log(
+                "vps.{$action}",
+                $user,
+                $natVps,
+                AuditLogService::makeActionProperties(
+                    'failure',
+                    $e->getMessage(),
+                    ['vps_id' => $natVps->vps_id, 'hostname' => $natVps->hostname]
+                )
+            );
 
             // Provide user-friendly error based on exception type
             $errorMessage = $this->getExceptionMessage($e, $action);

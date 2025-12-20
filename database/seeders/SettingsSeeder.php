@@ -207,6 +207,16 @@ class SettingsSeeder extends Seeder
                 'label' => 'Warning Cooldown (minutes)',
                 'description' => 'Minimum time between warning emails for same VPS',
             ],
+
+            // Audit Log Settings
+            [
+                'key' => 'audit_log_retention_days',
+                'value' => '90',
+                'type' => 'integer',
+                'group' => 'audit',
+                'label' => 'Audit Log Retention (days)',
+                'description' => 'Number of days to retain audit logs (0 = keep forever)',
+            ],
         ];
 
         foreach ($settings as $setting) {

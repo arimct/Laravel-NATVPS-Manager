@@ -17,3 +17,10 @@ Schedule::command('vps:monitor-resources')
     })
     ->withoutOverlapping()
     ->runInBackground();
+
+// Audit Log Cleanup - runs daily at midnight
+Schedule::command('audit:cleanup')
+    ->daily()
+    ->at('00:00')
+    ->withoutOverlapping()
+    ->runInBackground();

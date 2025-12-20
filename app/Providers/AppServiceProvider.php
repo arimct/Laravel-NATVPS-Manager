@@ -2,10 +2,17 @@
 
 namespace App\Providers;
 
+use App\Events\TwoFactorFailed;
+use App\Events\TwoFactorSuccess;
+use App\Listeners\AuthEventListener;
 use App\Services\Virtualizor\Contracts\VirtualizorServiceInterface;
 use App\Services\Virtualizor\VirtualizorService;
+use Illuminate\Auth\Events\Failed;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Logout;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
@@ -33,6 +40,31 @@ class AppServiceProvider extends ServiceProvider
         
         // Configure rate limiters
         $this->configureRateLimiting();
+        
+        // Register authentication event listeners for audit logging
+        $this->registerAuthEventListeners();
+    }
+    
+    /**
+     * Register authentication event listeners for audit logging.
+     * Requirements: 1.1, 1.2, 1.3, 1.4, 1.5
+     */
+    protected function registerAuthEventListeners(): void
+    {
+        // Login event - Requirements: 1.1
+        Event::listen(Login::class, [AuthEventListener::class, 'handleLogin']);
+        
+        // Failed login event - Requirements: 1.2
+        Event::listen(Failed::class, [AuthEventListener::class, 'handleFailed']);
+        
+        // Logout event - Requirements: 1.3
+        Event::listen(Logout::class, [AuthEventListener::class, 'handleLogout']);
+        
+        // 2FA success event - Requirements: 1.4
+        Event::listen(TwoFactorSuccess::class, [AuthEventListener::class, 'handleTwoFactorSuccess']);
+        
+        // 2FA failed event - Requirements: 1.5
+        Event::listen(TwoFactorFailed::class, [AuthEventListener::class, 'handleTwoFactorFailed']);
     }
     
     /**

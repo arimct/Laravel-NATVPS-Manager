@@ -808,9 +808,8 @@ class ActionResult {
 
 - [x] Multi-language support (English, Indonesian)
 - [x] Two-factor authentication (2FA)
-- [ ] User activity audit logging
-- [ ] Bulk VPS operations
-- [ ] Export data to CSV/Excel
+- [x] User activity audit logging
+- [ ] Update Themes (Simple, modern, elegant, profesional) (Dark/Light mode)
 
 ### Version 2.0 (Future)
 

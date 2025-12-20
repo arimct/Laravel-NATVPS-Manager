@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Enums\UserRole;
+use App\Services\AuditLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -13,6 +14,12 @@ use Illuminate\Validation\Rules\Password;
 
 class UserController extends Controller
 {
+    protected AuditLogService $auditLogService;
+
+    public function __construct(AuditLogService $auditLogService)
+    {
+        $this->auditLogService = $auditLogService;
+    }
     /**
      * Display a listing of all users with VPS counts.
      * Requirements: 8.5
@@ -36,7 +43,7 @@ class UserController extends Controller
 
     /**
      * Store a newly created user in storage.
-     * Requirements: 8.1
+     * Requirements: 8.1, 2.1
      */
     public function store(Request $request)
     {
@@ -53,6 +60,20 @@ class UserController extends Controller
             'password' => $validated['password'], // Will be hashed by the model cast
             'role' => $validated['role'],
         ]);
+
+        // Log user creation
+        $this->auditLogService->log(
+            'user.created',
+            $request->user(),
+            $user,
+            [
+                'new' => [
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'role' => $user->role->value,
+                ],
+            ]
+        );
 
         return redirect()
             ->route('admin.users.index')
@@ -81,7 +102,7 @@ class UserController extends Controller
 
     /**
      * Update the specified user in storage.
-     * Requirements: 8.2
+     * Requirements: 8.2, 2.2
      */
     public function update(Request $request, User $user)
     {
@@ -91,7 +112,29 @@ class UserController extends Controller
             'role' => ['required', Rule::enum(UserRole::class)],
         ]);
 
+        // Capture old values before update
+        $oldValues = [
+            'name' => $user->name,
+            'email' => $user->email,
+            'role' => $user->role->value,
+        ];
+
         $user->update($validated);
+
+        // Capture new values after update
+        $newValues = [
+            'name' => $user->name,
+            'email' => $user->email,
+            'role' => $user->role->value,
+        ];
+
+        // Log user update with old and new values
+        $this->auditLogService->log(
+            'user.updated',
+            $request->user(),
+            $user,
+            AuditLogService::makeUpdateProperties($oldValues, $newValues)
+        );
 
         return redirect()
             ->route('admin.users.index')
@@ -100,7 +143,7 @@ class UserController extends Controller
 
     /**
      * Remove the specified user from storage.
-     * Requirements: 8.3
+     * Requirements: 8.3, 2.3
      */
     public function destroy(Request $request, User $user)
     {
@@ -113,8 +156,26 @@ class UserController extends Controller
 
         $userName = $user->name;
 
+        // Capture user details before deletion for audit log
+        $deletedUserDetails = [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'role' => $user->role->value,
+        ];
+
         // Remove NAT VPS assignments (set user_id to null)
         $user->natVps()->update(['user_id' => null]);
+
+        // Log user deletion before actually deleting
+        $this->auditLogService->log(
+            'user.deleted',
+            $request->user(),
+            $user,
+            [
+                'deleted' => $deletedUserDetails,
+            ]
+        );
 
         $user->delete();
 
@@ -125,7 +186,7 @@ class UserController extends Controller
 
     /**
      * Reset the user's password.
-     * Requirements: 8.4
+     * Requirements: 8.4, 2.4
      */
     public function resetPassword(Request $request, User $user)
     {
@@ -136,6 +197,17 @@ class UserController extends Controller
         $user->update([
             'password' => $validated['password'], // Will be hashed by the model cast
         ]);
+
+        // Log password reset
+        $this->auditLogService->log(
+            'user.password_reset',
+            $request->user(),
+            $user,
+            [
+                'target_user_id' => $user->id,
+                'target_user_email' => $user->email,
+            ]
+        );
 
         return redirect()
             ->back()

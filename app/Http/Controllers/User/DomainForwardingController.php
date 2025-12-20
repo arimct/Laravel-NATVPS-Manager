@@ -4,6 +4,7 @@ namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
 use App\Models\NatVps;
+use App\Services\AuditLogService;
 use App\Services\Virtualizor\VirtualizorService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -15,7 +16,8 @@ use Illuminate\View\View;
 class DomainForwardingController extends Controller
 {
     public function __construct(
-        protected VirtualizorService $virtualizorService
+        protected VirtualizorService $virtualizorService,
+        protected AuditLogService $auditLogService
     ) {}
 
     /**
@@ -69,6 +71,26 @@ class DomainForwardingController extends Controller
             return redirect()->back()->with('error', $result->message);
         }
 
+        // Log domain forwarding creation
+        $this->auditLogService->log(
+            'domain_forwarding.created',
+            $request->user(),
+            $natVps,
+            [
+                'vps_id' => $natVps->id,
+                'vps_hostname' => $natVps->hostname,
+                'rule' => [
+                    'domain' => $validated['domain'] ?? null,
+                    'protocol' => $validated['protocol'],
+                    'source_port' => $validated['source_port'],
+                    'destination_port' => $validated['destination_port'],
+                ],
+                'metadata' => [
+                    'result' => 'success',
+                ],
+            ]
+        );
+
         return redirect()->back()->with('success', 'Domain forwarding rule created successfully.');
     }
 
@@ -105,10 +127,27 @@ class DomainForwardingController extends Controller
     /**
      * Delete a domain forwarding rule by Virtualizor record ID.
      */
-    public function destroy(NatVps $natVps, int $recordId): RedirectResponse
+    public function destroy(Request $request, NatVps $natVps, int $recordId): RedirectResponse
     {
         if (!$natVps->server) {
             return redirect()->back()->with('error', 'NAT VPS has no associated server.');
+        }
+
+        // Get the rule details before deletion for audit logging
+        $ruleDetails = null;
+        try {
+            $forwardings = $this->virtualizorService->getDomainForwarding(
+                $natVps->server,
+                $natVps->vps_id
+            );
+            foreach ($forwardings as $forwarding) {
+                if (isset($forwarding['id']) && $forwarding['id'] == $recordId) {
+                    $ruleDetails = $forwarding;
+                    break;
+                }
+            }
+        } catch (\Exception $e) {
+            // Continue with deletion even if we can't get rule details
         }
 
         $result = $this->virtualizorService->deleteDomainForwarding(
@@ -120,6 +159,22 @@ class DomainForwardingController extends Controller
         if (!$result->success) {
             return redirect()->back()->with('error', $result->message);
         }
+
+        // Log domain forwarding deletion
+        $this->auditLogService->log(
+            'domain_forwarding.deleted',
+            $request->user(),
+            $natVps,
+            [
+                'vps_id' => $natVps->id,
+                'vps_hostname' => $natVps->hostname,
+                'record_id' => $recordId,
+                'rule' => $ruleDetails,
+                'metadata' => [
+                    'result' => 'success',
+                ],
+            ]
+        );
 
         return redirect()->back()->with('success', 'Domain forwarding rule deleted successfully.');
     }

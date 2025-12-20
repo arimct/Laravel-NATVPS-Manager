@@ -7,6 +7,7 @@ use App\Models\NatVps;
 use App\Models\Server;
 use App\Models\User;
 use App\Enums\UserRole;
+use App\Services\AuditLogService;
 use App\Services\GeoLocation\GeoLocationService;
 use App\Services\MailService;
 use App\Services\Virtualizor\VirtualizorService;
@@ -15,6 +16,12 @@ use Illuminate\Http\Request;
 
 class NatVpsController extends Controller
 {
+    protected AuditLogService $auditLogService;
+
+    public function __construct(AuditLogService $auditLogService)
+    {
+        $this->auditLogService = $auditLogService;
+    }
     /**
      * Display a listing of all NAT VPS instances.
      * Requirements: 3.4
@@ -58,6 +65,23 @@ class NatVpsController extends Controller
         $validated['ssh_port'] = $validated['ssh_port'] ?? 22;
 
         $natVps = NatVps::create($validated);
+
+        // Log VPS creation
+        $this->auditLogService->log(
+            'vps.created',
+            $request->user(),
+            $natVps,
+            [
+                'new' => [
+                    'id' => $natVps->id,
+                    'server_id' => $natVps->server_id,
+                    'vps_id' => $natVps->vps_id,
+                    'hostname' => $natVps->hostname,
+                    'user_id' => $natVps->user_id,
+                    'ssh_port' => $natVps->ssh_port,
+                ],
+            ]
+        );
 
         return redirect()
             ->route('admin.nat-vps.index')
@@ -158,7 +182,33 @@ class NatVpsController extends Controller
             unset($validated['ssh_password']);
         }
 
+        // Capture old values before update
+        $oldValues = [
+            'server_id' => $natVps->server_id,
+            'vps_id' => $natVps->vps_id,
+            'hostname' => $natVps->hostname,
+            'user_id' => $natVps->user_id,
+            'ssh_port' => $natVps->ssh_port,
+        ];
+
         $natVps->update($validated);
+
+        // Capture new values after update
+        $newValues = [
+            'server_id' => $natVps->server_id,
+            'vps_id' => $natVps->vps_id,
+            'hostname' => $natVps->hostname,
+            'user_id' => $natVps->user_id,
+            'ssh_port' => $natVps->ssh_port,
+        ];
+
+        // Log VPS update with old and new values
+        $this->auditLogService->log(
+            'vps.updated',
+            $request->user(),
+            $natVps,
+            AuditLogService::makeUpdateProperties($oldValues, $newValues)
+        );
 
         return redirect()
             ->route('admin.nat-vps.index')
@@ -169,9 +219,29 @@ class NatVpsController extends Controller
      * Remove the specified NAT VPS from storage.
      * Requirements: 3.3
      */
-    public function destroy(NatVps $natVps)
+    public function destroy(Request $request, NatVps $natVps)
     {
         $hostname = $natVps->hostname;
+
+        // Capture VPS details before deletion for audit log
+        $deletedVpsDetails = [
+            'id' => $natVps->id,
+            'server_id' => $natVps->server_id,
+            'vps_id' => $natVps->vps_id,
+            'hostname' => $natVps->hostname,
+            'user_id' => $natVps->user_id,
+            'ssh_port' => $natVps->ssh_port,
+        ];
+
+        // Log VPS deletion before actually deleting
+        $this->auditLogService->log(
+            'vps.deleted',
+            $request->user(),
+            $natVps,
+            [
+                'deleted' => $deletedVpsDetails,
+            ]
+        );
 
         $natVps->delete();
 
@@ -193,6 +263,20 @@ class NatVpsController extends Controller
         $user = User::findOrFail($validated['user_id']);
 
         $natVps->update(['user_id' => $user->id]);
+
+        // Log VPS assignment
+        $this->auditLogService->log(
+            'vps.assigned',
+            $request->user(),
+            $natVps,
+            [
+                'vps_id' => $natVps->id,
+                'vps_hostname' => $natVps->hostname,
+                'assigned_user_id' => $user->id,
+                'assigned_user_name' => $user->name,
+                'assigned_user_email' => $user->email,
+            ]
+        );
         
         // Send email notification
         $mailService->sendVpsAssigned($user, $natVps);
@@ -206,11 +290,29 @@ class NatVpsController extends Controller
      * Remove user assignment from the NAT VPS.
      * Requirements: 4.2
      */
-    public function unassign(NatVps $natVps, MailService $mailService)
+    public function unassign(Request $request, NatVps $natVps, MailService $mailService)
     {
         $user = $natVps->user;
         
+        // Capture previous user details for audit log
+        $previousUserDetails = $user ? [
+            'previous_user_id' => $user->id,
+            'previous_user_name' => $user->name,
+            'previous_user_email' => $user->email,
+        ] : [];
+
         $natVps->update(['user_id' => null]);
+
+        // Log VPS unassignment
+        $this->auditLogService->log(
+            'vps.unassigned',
+            $request->user(),
+            $natVps,
+            array_merge([
+                'vps_id' => $natVps->id,
+                'vps_hostname' => $natVps->hostname,
+            ], $previousUserDetails)
+        );
         
         // Send email notification if user existed
         if ($user) {

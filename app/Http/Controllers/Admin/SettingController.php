@@ -160,4 +160,29 @@ class SettingController extends Controller
         return redirect()->route('admin.settings.notifications')
             ->with('success', 'Notification settings updated successfully.');
     }
+
+    /**
+     * Show audit log settings.
+     */
+    public function audit()
+    {
+        $settings = Setting::where('group', 'audit')->get()->keyBy('key');
+        
+        return view('admin.settings.audit', compact('settings'));
+    }
+
+    /**
+     * Update audit log settings.
+     */
+    public function updateAudit(Request $request)
+    {
+        $request->validate([
+            'audit_log_retention_days' => 'required|integer|min:0|max:3650',
+        ]);
+
+        Setting::set('audit_log_retention_days', $request->audit_log_retention_days);
+
+        return redirect()->route('admin.settings.audit')
+            ->with('success', 'Audit log settings updated successfully.');
+    }
 }
