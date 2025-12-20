@@ -32,15 +32,15 @@ class AuthController extends Controller
             $request->session()->regenerate();
             
             // Flash message before redirect to ensure it persists
-            session()->flash('success', 'Welcome back, ' . Auth::user()->name . '!');
+            session()->flash('success', __('app.welcome_back', ['name' => Auth::user()->name]));
 
             return redirect()->intended('dashboard');
         }
 
         return back()->withErrors([
-            'email' => 'The provided credentials do not match our records.',
+            'email' => __('app.invalid_credentials'),
         ])->onlyInput('email')
-            ->with('error', 'Invalid email or password. Please try again.');
+            ->with('error', __('app.invalid_credentials'));
     }
 
     /**
@@ -53,6 +53,6 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect('/login')->with('success', 'You have been logged out successfully.');
+        return redirect('/login')->with('success', __('app.logout_success'));
     }
 }

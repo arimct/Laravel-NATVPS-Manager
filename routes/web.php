@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\User\DashboardController as UserDashboardController;
 use Illuminate\Support\Facades\Route;
 
@@ -14,6 +15,9 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('welcome');
 });
+
+// Language switch route
+Route::get('language/{locale}', [LanguageController::class, 'switch'])->name('language.switch');
 
 // Test toast notifications (remove in production)
 Route::get('/test-toast', function () {
@@ -130,6 +134,28 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::resource('users', \App\Http\Controllers\Admin\UserController::class);
     Route::post('users/{user}/reset-password', [\App\Http\Controllers\Admin\UserController::class, 'resetPassword'])
         ->name('users.reset-password');
+    
+    // Settings routes
+    Route::prefix('settings')->name('settings.')->group(function () {
+        // General settings
+        Route::get('/', [\App\Http\Controllers\Admin\SettingController::class, 'general'])->name('general');
+        Route::put('general', [\App\Http\Controllers\Admin\SettingController::class, 'updateGeneral'])->name('general.update');
+        
+        // Mail settings
+        Route::get('mail', [\App\Http\Controllers\Admin\SettingController::class, 'mail'])->name('mail');
+        Route::put('mail', [\App\Http\Controllers\Admin\SettingController::class, 'updateMail'])->name('mail.update');
+        Route::post('mail/test', [\App\Http\Controllers\Admin\SettingController::class, 'testMail'])->name('mail.test');
+        
+        // Notification settings
+        Route::get('notifications', [\App\Http\Controllers\Admin\SettingController::class, 'notifications'])->name('notifications');
+        Route::put('notifications', [\App\Http\Controllers\Admin\SettingController::class, 'updateNotifications'])->name('notifications.update');
+        
+        // Email templates
+        Route::get('email-templates', [\App\Http\Controllers\Admin\EmailTemplateController::class, 'index'])->name('email-templates.index');
+        Route::get('email-templates/{emailTemplate}/edit', [\App\Http\Controllers\Admin\EmailTemplateController::class, 'edit'])->name('email-templates.edit');
+        Route::put('email-templates/{emailTemplate}', [\App\Http\Controllers\Admin\EmailTemplateController::class, 'update'])->name('email-templates.update');
+        Route::get('email-templates/{emailTemplate}/preview', [\App\Http\Controllers\Admin\EmailTemplateController::class, 'preview'])->name('email-templates.preview');
+    });
 });
 
 /*

@@ -16,26 +16,30 @@
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                     <a href="{{ route('dashboard') }}" 
                        class="inline-flex items-center px-1 pt-1 border-b-2 {{ request()->routeIs('dashboard') ? 'border-indigo-400 dark:border-indigo-600 text-gray-900 dark:text-gray-100' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-700' }} text-sm font-medium leading-5 focus:outline-none transition duration-150 ease-in-out">
-                        Dashboard
+                        {{ __('app.dashboard') }}
                     </a>
                     
                     @if(auth()->user()->isAdmin())
                         <a href="{{ route('admin.servers.index') }}" 
                            class="inline-flex items-center px-1 pt-1 border-b-2 {{ request()->routeIs('admin.servers.*') ? 'border-indigo-400 dark:border-indigo-600 text-gray-900 dark:text-gray-100' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-700' }} text-sm font-medium leading-5 focus:outline-none transition duration-150 ease-in-out">
-                            Servers
+                            {{ __('app.servers') }}
                         </a>
                         <a href="{{ route('admin.nat-vps.index') }}" 
                            class="inline-flex items-center px-1 pt-1 border-b-2 {{ request()->routeIs('admin.nat-vps.*') ? 'border-indigo-400 dark:border-indigo-600 text-gray-900 dark:text-gray-100' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-700' }} text-sm font-medium leading-5 focus:outline-none transition duration-150 ease-in-out">
-                            NAT VPS
+                            {{ __('app.nat_vps') }}
                         </a>
                         <a href="{{ route('admin.users.index') }}" 
                            class="inline-flex items-center px-1 pt-1 border-b-2 {{ request()->routeIs('admin.users.*') ? 'border-indigo-400 dark:border-indigo-600 text-gray-900 dark:text-gray-100' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-700' }} text-sm font-medium leading-5 focus:outline-none transition duration-150 ease-in-out">
-                            Users
+                            {{ __('app.users') }}
+                        </a>
+                        <a href="{{ route('admin.settings.general') }}" 
+                           class="inline-flex items-center px-1 pt-1 border-b-2 {{ request()->routeIs('admin.settings.*') ? 'border-indigo-400 dark:border-indigo-600 text-gray-900 dark:text-gray-100' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-700' }} text-sm font-medium leading-5 focus:outline-none transition duration-150 ease-in-out">
+                            {{ __('app.settings') }}
                         </a>
                     @else
                         <a href="{{ route('user.vps.index') }}" 
                            class="inline-flex items-center px-1 pt-1 border-b-2 {{ request()->routeIs('user.vps.*') ? 'border-indigo-400 dark:border-indigo-600 text-gray-900 dark:text-gray-100' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-700' }} text-sm font-medium leading-5 focus:outline-none transition duration-150 ease-in-out">
-                            My VPS
+                            {{ __('app.my_vps') }}
                         </a>
                     @endif
                 </div>
@@ -43,6 +47,42 @@
 
             <!-- Settings Dropdown -->
             <div class="hidden sm:flex sm:items-center sm:ms-6">
+                <!-- Language Switcher -->
+                <div x-data="{ open: false }" class="relative me-3">
+                    <button @click="open = ! open" class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none transition ease-in-out duration-150">
+                        <svg class="w-5 h-5 me-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
+                        </svg>
+                        <span>{{ strtoupper(app()->getLocale()) }}</span>
+                        <svg class="ms-1 fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+
+                    <div x-show="open" 
+                         @click.away="open = false"
+                         x-transition:enter="transition ease-out duration-200"
+                         x-transition:enter-start="opacity-0 scale-95"
+                         x-transition:enter-end="opacity-100 scale-100"
+                         x-transition:leave="transition ease-in duration-75"
+                         x-transition:leave-start="opacity-100 scale-100"
+                         x-transition:leave-end="opacity-0 scale-95"
+                         class="absolute right-0 z-50 mt-2 w-32 rounded-md shadow-lg origin-top-right"
+                         style="display: none;">
+                        <div class="rounded-md ring-1 ring-black ring-opacity-5 py-1 bg-white dark:bg-gray-700">
+                            <a href="{{ route('language.switch', 'en') }}" 
+                               class="flex items-center px-4 py-2 text-sm {{ app()->getLocale() == 'en' ? 'text-indigo-600 dark:text-indigo-400 bg-gray-100 dark:bg-gray-600' : 'text-gray-700 dark:text-gray-300' }} hover:bg-gray-100 dark:hover:bg-gray-600">
+                                <span class="me-2">🇺🇸</span> English
+                            </a>
+                            <a href="{{ route('language.switch', 'id') }}" 
+                               class="flex items-center px-4 py-2 text-sm {{ app()->getLocale() == 'id' ? 'text-indigo-600 dark:text-indigo-400 bg-gray-100 dark:bg-gray-600' : 'text-gray-700 dark:text-gray-300' }} hover:bg-gray-100 dark:hover:bg-gray-600">
+                                <span class="me-2">🇮🇩</span> Indonesia
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User Dropdown -->
                 <div x-data="{ open: false }" class="relative">
                     <button @click="open = ! open" class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none transition ease-in-out duration-150">
                         <div>{{ Auth::user()->name }}</div>
@@ -67,7 +107,7 @@
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
                                 <button type="submit" class="block w-full px-4 py-2 text-start text-sm leading-5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-800 transition duration-150 ease-in-out">
-                                    Log Out
+                                    {{ __('app.logout') }}
                                 </button>
                             </form>
                         </div>
@@ -92,26 +132,30 @@
         <div class="pt-2 pb-3 space-y-1">
             <a href="{{ route('dashboard') }}" 
                class="block w-full ps-3 pe-4 py-2 border-l-4 {{ request()->routeIs('dashboard') ? 'border-indigo-400 dark:border-indigo-600 text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/50' : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-600' }} text-start text-base font-medium focus:outline-none transition duration-150 ease-in-out">
-                Dashboard
+                {{ __('app.dashboard') }}
             </a>
             
             @if(auth()->user()->isAdmin())
                 <a href="{{ route('admin.servers.index') }}" 
                    class="block w-full ps-3 pe-4 py-2 border-l-4 {{ request()->routeIs('admin.servers.*') ? 'border-indigo-400 dark:border-indigo-600 text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/50' : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-600' }} text-start text-base font-medium focus:outline-none transition duration-150 ease-in-out">
-                    Servers
+                    {{ __('app.servers') }}
                 </a>
                 <a href="{{ route('admin.nat-vps.index') }}" 
                    class="block w-full ps-3 pe-4 py-2 border-l-4 {{ request()->routeIs('admin.nat-vps.*') ? 'border-indigo-400 dark:border-indigo-600 text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/50' : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-600' }} text-start text-base font-medium focus:outline-none transition duration-150 ease-in-out">
-                    NAT VPS
+                    {{ __('app.nat_vps') }}
                 </a>
                 <a href="{{ route('admin.users.index') }}" 
                    class="block w-full ps-3 pe-4 py-2 border-l-4 {{ request()->routeIs('admin.users.*') ? 'border-indigo-400 dark:border-indigo-600 text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/50' : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-600' }} text-start text-base font-medium focus:outline-none transition duration-150 ease-in-out">
-                    Users
+                    {{ __('app.users') }}
+                </a>
+                <a href="{{ route('admin.settings.general') }}" 
+                   class="block w-full ps-3 pe-4 py-2 border-l-4 {{ request()->routeIs('admin.settings.*') ? 'border-indigo-400 dark:border-indigo-600 text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/50' : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-600' }} text-start text-base font-medium focus:outline-none transition duration-150 ease-in-out">
+                    {{ __('app.settings') }}
                 </a>
             @else
                 <a href="{{ route('user.vps.index') }}" 
                    class="block w-full ps-3 pe-4 py-2 border-l-4 {{ request()->routeIs('user.vps.*') ? 'border-indigo-400 dark:border-indigo-600 text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/50' : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-600' }} text-start text-base font-medium focus:outline-none transition duration-150 ease-in-out">
-                    My VPS
+                    {{ __('app.my_vps') }}
                 </a>
             @endif
         </div>
@@ -124,10 +168,25 @@
             </div>
 
             <div class="mt-3 space-y-1">
+                <!-- Language Switcher Mobile -->
+                <div class="ps-3 pe-4 py-2 border-l-4 border-transparent">
+                    <span class="text-sm text-gray-500 dark:text-gray-400">{{ __('app.language') }}:</span>
+                    <div class="flex space-x-2 mt-1">
+                        <a href="{{ route('language.switch', 'en') }}" 
+                           class="px-3 py-1 text-sm rounded {{ app()->getLocale() == 'en' ? 'bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300' }}">
+                            🇺🇸 EN
+                        </a>
+                        <a href="{{ route('language.switch', 'id') }}" 
+                           class="px-3 py-1 text-sm rounded {{ app()->getLocale() == 'id' ? 'bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300' }}">
+                            🇮🇩 ID
+                        </a>
+                    </div>
+                </div>
+
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
                     <button type="submit" class="block w-full ps-3 pe-4 py-2 border-l-4 border-transparent text-start text-base font-medium text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-600 focus:outline-none focus:text-gray-800 dark:focus:text-gray-200 focus:bg-gray-50 dark:focus:bg-gray-700 focus:border-gray-300 dark:focus:border-gray-600 transition duration-150 ease-in-out">
-                        Log Out
+                        {{ __('app.logout') }}
                     </button>
                 </form>
             </div>

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\User;
 use App\Http\Controllers\Controller;
 use App\Models\NatVps;
 use App\Services\GeoLocation\GeoLocationService;
+use App\Services\MailService;
 use App\Services\Virtualizor\Contracts\VirtualizorServiceInterface;
 use App\Services\Virtualizor\DTOs\VpsInfo;
 use Illuminate\Http\JsonResponse;
@@ -202,17 +203,8 @@ class VpsController extends Controller
         if (!$natVps->server) {
             return redirect()
                 ->route('user.vps.show', $natVps)
-                ->with('error', 'Unable to perform action. This VPS is not connected to any server. Please contact support.');
+                ->with('error', __('app.vps_no_server'));
         }
-
-        $actionLabels = [
-            'start' => ['past' => 'started', 'present' => 'Starting', 'icon' => '▶️'],
-            'stop' => ['past' => 'stopped', 'present' => 'Stopping', 'icon' => '⏹️'],
-            'restart' => ['past' => 'restarted', 'present' => 'Restarting', 'icon' => '🔄'],
-            'poweroff' => ['past' => 'powered off', 'present' => 'Powering off', 'icon' => '⏻'],
-        ];
-
-        $label = $actionLabels[$action] ?? ['past' => $action, 'present' => ucfirst($action), 'icon' => ''];
 
         try {
             $result = match ($action) {
@@ -224,9 +216,23 @@ class VpsController extends Controller
             };
 
             if ($result->success) {
+                // Send power action notification to VPS owner
+                if ($natVps->user) {
+                    $mailService = app(MailService::class);
+                    $mailService->sendVpsPowerAction($natVps->user, $natVps, $action, auth()->user()?->name ?? 'System');
+                }
+                
+                $successMessage = match ($action) {
+                    'start' => __('app.vps_started'),
+                    'stop' => __('app.vps_stopped'),
+                    'restart' => __('app.vps_restarted'),
+                    'poweroff' => __('app.vps_powered_off'),
+                    default => __('app.success'),
+                };
+                
                 return redirect()
                     ->route('user.vps.show', $natVps)
-                    ->with('success', "Your VPS \"{$natVps->hostname}\" has been {$label['past']} successfully. Changes may take a few seconds to reflect.");
+                    ->with('success', $successMessage);
             }
 
             // Parse API error for user-friendly message

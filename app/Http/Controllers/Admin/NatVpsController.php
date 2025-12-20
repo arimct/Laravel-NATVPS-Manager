@@ -8,6 +8,7 @@ use App\Models\Server;
 use App\Models\User;
 use App\Enums\UserRole;
 use App\Services\GeoLocation\GeoLocationService;
+use App\Services\MailService;
 use App\Services\Virtualizor\VirtualizorService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -183,7 +184,7 @@ class NatVpsController extends Controller
      * Assign a user to the NAT VPS.
      * Requirements: 4.1
      */
-    public function assign(Request $request, NatVps $natVps)
+    public function assign(Request $request, NatVps $natVps, MailService $mailService)
     {
         $validated = $request->validate([
             'user_id' => ['required', 'exists:users,id'],
@@ -192,6 +193,9 @@ class NatVpsController extends Controller
         $user = User::findOrFail($validated['user_id']);
 
         $natVps->update(['user_id' => $user->id]);
+        
+        // Send email notification
+        $mailService->sendVpsAssigned($user, $natVps);
 
         return redirect()
             ->back()
@@ -202,9 +206,16 @@ class NatVpsController extends Controller
      * Remove user assignment from the NAT VPS.
      * Requirements: 4.2
      */
-    public function unassign(NatVps $natVps)
+    public function unassign(NatVps $natVps, MailService $mailService)
     {
+        $user = $natVps->user;
+        
         $natVps->update(['user_id' => null]);
+        
+        // Send email notification if user existed
+        if ($user) {
+            $mailService->sendVpsUnassigned($user, $natVps);
+        }
 
         return redirect()
             ->back()
@@ -354,6 +365,12 @@ class NatVpsController extends Controller
             };
 
             if ($result->success) {
+                // Send power action notification to VPS owner
+                if ($natVps->user) {
+                    $mailService = app(MailService::class);
+                    $mailService->sendVpsPowerAction($natVps->user, $natVps, $action, auth()->user()->name);
+                }
+                
                 return redirect()
                     ->route('admin.nat-vps.show', $natVps)
                     ->with('success', "VPS has been {$actionLabels[$action]} successfully.");

@@ -16,6 +16,12 @@ class DatabaseSeeder extends Seeder
     {
         // Create default admin user
         $this->createAdminUser();
+        
+        // Seed settings and email templates
+        $this->call([
+            SettingsSeeder::class,
+            EmailTemplateSeeder::class,
+        ]);
 
         // Optionally seed sample data for development
         if (app()->environment('local', 'development')) {

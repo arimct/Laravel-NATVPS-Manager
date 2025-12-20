@@ -100,6 +100,21 @@ NAT VPS Manager addresses these challenges by providing:
 - **Recent Activity** - Latest VPS and user operations
 - **Quick Actions** - Fast access to common admin tasks
 
+#### Settings Management
+- **General Settings** - App name, logo, favicon, timezone configuration
+- **Mail Settings** - SMTP configuration with encryption support
+- **Test Email** - Verify SMTP settings before going live
+- **Notification Toggles** - Enable/disable specific email notifications
+- **Email Templates** - Customizable HTML email templates with variables
+- **Resource Monitoring** - Configure automatic VPS resource checking
+
+#### Email Notifications
+- **VPS Assignment** - Notify users when VPS is assigned/unassigned
+- **Power Actions** - Email alerts for start/stop/restart operations
+- **Resource Warnings** - Automatic alerts when CPU/RAM/Disk exceeds threshold
+- **Welcome Email** - Customizable welcome message for new users
+- **Template Variables** - Dynamic content with {{variable}} placeholders
+
 ### User Portal
 
 #### VPS Overview
@@ -146,6 +161,9 @@ NAT VPS Manager addresses these challenges by providing:
 - **SQL Injection Prevention** - Eloquent ORM parameterized queries
 - **XSS Protection** - Blade template auto-escaping
 - **Session Security** - Secure session handling
+- **API Rate Limiting** - Prevent abuse with configurable limits
+  - Login: 5 attempts per minute
+  - VPS Power Actions: 10 per minute per user
 
 #### Performance
 - **Lazy Loading** - Efficient database queries with eager loading
@@ -473,6 +491,55 @@ For domain forwarding to work, ensure your Virtualizor server has:
 | `SESSION_DRIVER` | Session storage | `database` |
 | `CACHE_DRIVER` | Cache storage | `file` |
 
+### Setting Up Task Scheduler
+
+For automated resource monitoring to work, you need to set up Laravel's task scheduler.
+
+**Add to crontab:**
+```bash
+* * * * * cd /path-to-your-project && php artisan schedule:run >> /dev/null 2>&1
+```
+
+**For development/testing:**
+```bash
+php artisan schedule:work
+```
+
+**Manual resource check:**
+```bash
+
+CPU Usage0.0%
+0 / 1,696 MHz
+
+RAM Usage 63.3%
+3.71 GB / 5.86 GB
+
+Disk Usage 64.1%
+25.66 GB / 40.00 GB
+
+Bandwidth 0.4%
+4.15 GB / 1,000 GB
+
+```
+
+### Email Configuration
+
+Email settings can be configured from the Admin Settings panel (`/admin/settings/mail`), but you can also set defaults in `.env`:
+
+```env
+# Default SMTP (can be overridden in Settings)
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=your-email@gmail.com
+MAIL_PASSWORD=your-app-password
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=noreply@yourdomain.com
+MAIL_FROM_NAME="${APP_NAME}"
+```
+
+**Note:** Settings configured in the Admin panel take precedence over `.env` values.
+
 ---
 
 ## Project Structure
@@ -480,6 +547,10 @@ For domain forwarding to work, ensure your Virtualizor server has:
 ```
 Laravel-NATVPS-Manager/
 ├── app/
+│   ├── Console/
+│   │   └── Commands/
+│   │       └── MonitorVpsResources.php  # Scheduled resource monitoring
+│   │
 │   ├── Enums/
 │   │   ├── UserRole.php                 # Admin/User role enum
 │   │   └── DomainProtocol.php           # HTTP/HTTPS/TCP enum
@@ -490,7 +561,9 @@ Laravel-NATVPS-Manager/
 │   │   │   │   ├── DashboardController.php
 │   │   │   │   ├── ServerController.php
 │   │   │   │   ├── NatVpsController.php
-│   │   │   │   └── UserController.php
+│   │   │   │   ├── UserController.php
+│   │   │   │   ├── SettingController.php      # Settings management
+│   │   │   │   └── EmailTemplateController.php # Email templates
 │   │   │   │
 │   │   │   └── User/
 │   │   │       ├── DashboardController.php
@@ -504,9 +577,13 @@ Laravel-NATVPS-Manager/
 │   │   ├── User.php                     # User with role attribute
 │   │   ├── Server.php                   # Virtualizor server config
 │   │   ├── NatVps.php                   # NAT VPS instance
-│   │   └── DomainForwarding.php         # VDF forwarding rules
+│   │   ├── DomainForwarding.php         # VDF forwarding rules
+│   │   ├── Setting.php                  # Dynamic settings model
+│   │   └── EmailTemplate.php            # Email template model
 │   │
 │   ├── Services/
+│   │   ├── SettingService.php           # Settings helper service
+│   │   ├── MailService.php              # Email notification service
 │   │   └── Virtualizor/
 │   │       ├── Contracts/
 │   │       │   └── VirtualizorServiceInterface.php
@@ -523,7 +600,7 @@ Laravel-NATVPS-Manager/
 │   │       └── enduser.php              # Virtualizor API wrapper
 │   │
 │   └── Providers/
-│       └── VirtualizorServiceProvider.php
+│       └── AppServiceProvider.php       # Service providers & rate limiting
 │
 ├── config/
 │   └── app.php                          # Application config
@@ -531,7 +608,9 @@ Laravel-NATVPS-Manager/
 ├── database/
 │   ├── migrations/                      # Database migrations
 │   └── seeders/
-│       └── DatabaseSeeder.php           # Default admin seeder
+│       ├── DatabaseSeeder.php           # Main seeder
+│       ├── SettingsSeeder.php           # Default settings
+│       └── EmailTemplateSeeder.php      # Default email templates
 │
 ├── resources/
 │   ├── views/
@@ -539,7 +618,12 @@ Laravel-NATVPS-Manager/
 │   │   │   ├── dashboard.blade.php
 │   │   │   ├── servers/
 │   │   │   ├── nat-vps/
-│   │   │   └── users/
+│   │   │   ├── users/
+│   │   │   └── settings/                # Settings views
+│   │   │       ├── general.blade.php
+│   │   │       ├── mail.blade.php
+│   │   │       ├── notifications.blade.php
+│   │   │       └── email-templates/
 │   │   │
 │   │   ├── user/                        # User portal views
 │   │   │   ├── dashboard.blade.php
@@ -547,7 +631,7 @@ Laravel-NATVPS-Manager/
 │   │   │
 │   │   ├── components/                  # Blade components
 │   │   └── layouts/
-│   │       └── app.blade.php            # Main layout
+│   │       └── app.blade.php            # Main layout with toast
 │   │
 │   ├── css/
 │   │   └── app.css                      # Tailwind imports
@@ -693,16 +777,36 @@ class ActionResult {
 - [x] Responsive design with dark mode support
 - [x] SSH credential display with security masking
 
-### Version 1.1 (In Progress)
+### Version 1.1 ✅
 
 - [x] VPS resource usage graphs (CPU, RAM, Network)
-- [ ] Email notifications for VPS events
+- [x] Email notifications for VPS events
 - [x] API rate limiting and request throttling
-- [x] Improved error messages and user feedback (Toastify)
+- [x] Improved error messages and user feedback (Toast notifications with progress bar)
 
-### Version 1.2 (Planned)
+### Version 1.2 (Current)
 
-- [ ] Multi-language support (English, Indonesian)
+- [x] **Admin Settings Panel** - Dynamic configuration from database
+  - [x] General Settings (App name, logo, favicon, timezone)
+  - [x] Mail Settings (SMTP configuration with test email)
+  - [x] Notification Settings (Toggle email notifications)
+  - [x] Email Template Editor (Customizable HTML templates)
+- [x] **Email Notification System**
+  - [x] VPS Assigned notification
+  - [x] VPS Unassigned notification
+  - [x] VPS Power Action notification (start/stop/restart)
+  - [x] Resource Warning notification (CPU/RAM/Disk threshold)
+  - [x] Welcome email for new users
+- [x] **Automated Resource Monitoring**
+  - [x] Scheduled VPS resource checking
+  - [x] Configurable check interval (5-60 minutes)
+  - [x] Configurable warning thresholds (CPU/RAM/Disk %)
+  - [x] Warning cooldown to prevent email spam
+- [x] **Login/Logout Notifications** - Toast messages for authentication events
+
+### Version 1.3 (Planned)
+
+- [x] Multi-language support (English, Indonesian)
 - [ ] Two-factor authentication (2FA)
 - [ ] User activity audit logging
 - [ ] Bulk VPS operations

@@ -4,7 +4,7 @@
     <div class="p-6">
         <div class="flex justify-between items-center mb-4">
             <div class="flex items-center space-x-4">
-                <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Resource Usage</h3>
+                <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">{{ __('app.resource_usage') }}</h3>
                 @if(!$apiOffline && $apiEndpoint)
                     <div class="flex items-center space-x-2 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
                         <button type="button" id="view-bars-btn" class="px-2 py-1 text-xs rounded-md bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm transition-all" title="Progress Bars">
@@ -19,14 +19,14 @@
             @if(!$apiOffline && $apiEndpoint)
                 <button type="button" id="refresh-resource-btn" class="inline-flex items-center px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 disabled:opacity-50">
                     <svg id="refresh-icon" class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                    <span id="refresh-text">Refresh</span>
+                    <span id="refresh-text">{{ __('app.refresh') }}</span>
                 </button>
             @endif
         </div>
 
         @if($apiOffline)
             <div class="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
-                <p class="text-sm text-yellow-700 dark:text-yellow-300">Resource usage data is unavailable while API is offline.</p>
+                <p class="text-sm text-yellow-700 dark:text-yellow-300">{{ __('app.api_offline') }}</p>
             </div>
         @elseif($apiEndpoint)
             <div id="resource-loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -272,7 +272,7 @@
             })();
             </script>
         @else
-            <div class="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg"><p class="text-sm text-gray-500 dark:text-gray-400">Resource usage data is not available.</p></div>
+            <div class="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg"><p class="text-sm text-gray-500 dark:text-gray-400">{{ __('app.no_data') }}</p></div>
         @endif
     </div>
 </div>

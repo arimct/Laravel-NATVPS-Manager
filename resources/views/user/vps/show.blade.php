@@ -16,7 +16,7 @@
                     <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                     </svg>
-                    API Offline
+                    {{ __('app.api_offline') }}
                 </span>
             @endif
         </div>
@@ -33,14 +33,14 @@
                 <!-- VPS Specifications Card -->
                 <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6">
-                        <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">VPS Specifications</h3>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">{{ __('app.specifications') }}</h3>
                         <dl class="space-y-3">
                             <div class="flex justify-between">
-                                <dt class="text-sm text-gray-500 dark:text-gray-400">Hostname</dt>
+                                <dt class="text-sm text-gray-500 dark:text-gray-400">{{ __('app.hostname') }}</dt>
                                 <dd class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ $natVps->hostname }}</dd>
                             </div>
                             <div class="flex justify-between">
-                                <dt class="text-sm text-gray-500 dark:text-gray-400">VPS ID</dt>
+                                <dt class="text-sm text-gray-500 dark:text-gray-400">{{ __('app.vps_id') }}</dt>
                                 <dd class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ $natVps->vps_id }}</dd>
                             </div>
                             <div class="flex justify-between">
@@ -54,7 +54,7 @@
                                 $osIcon = $liveInfo?->getOsIcon() ?? 'linux';
                             @endphp
                             <div class="flex justify-between items-center">
-                                <dt class="text-sm text-gray-500 dark:text-gray-400">Operating System</dt>
+                                <dt class="text-sm text-gray-500 dark:text-gray-400">{{ __('app.os') }}</dt>
                                 <dd class="text-sm font-medium text-gray-900 dark:text-gray-100 flex items-center">
                                     @if($osName)
                                         <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/{{ $osIcon }}/{{ $osIcon }}-original.svg" 
@@ -73,7 +73,7 @@
                                 $isp = $serverLocation['isp'] ?? $serverLocation['org'] ?? null;
                             @endphp
                             <div class="flex justify-between items-center">
-                                <dt class="text-sm text-gray-500 dark:text-gray-400">Region</dt>
+                                <dt class="text-sm text-gray-500 dark:text-gray-400">{{ __('app.region') }}</dt>
                                 <dd class="text-sm font-medium text-gray-900 dark:text-gray-100 flex items-center">
                                     @if($location)
                                         <svg class="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -93,25 +93,25 @@
                             </div>
                             @endif
                             <div class="flex justify-between">
-                                <dt class="text-sm text-gray-500 dark:text-gray-400">CPU</dt>
+                                <dt class="text-sm text-gray-500 dark:text-gray-400">{{ __('app.cpu') }}</dt>
                                 <dd class="text-sm font-medium text-gray-900 dark:text-gray-100">
                                     {{ $liveInfo?->cpu ?? $cachedSpecs['cpu'] ?? '-' }} Core(s)
                                 </dd>
                             </div>
                             <div class="flex justify-between">
-                                <dt class="text-sm text-gray-500 dark:text-gray-400">RAM</dt>
+                                <dt class="text-sm text-gray-500 dark:text-gray-400">{{ __('app.ram') }}</dt>
                                 <dd class="text-sm font-medium text-gray-900 dark:text-gray-100">
                                     {{ ($liveInfo?->ram ?? $cachedSpecs['ram'] ?? null) ? ($liveInfo?->ram ?? $cachedSpecs['ram']) . ' MB' : '-' }}
                                 </dd>
                             </div>
                             <div class="flex justify-between">
-                                <dt class="text-sm text-gray-500 dark:text-gray-400">Disk</dt>
+                                <dt class="text-sm text-gray-500 dark:text-gray-400">{{ __('app.disk') }}</dt>
                                 <dd class="text-sm font-medium text-gray-900 dark:text-gray-100">
                                     {{ ($liveInfo?->disk ?? $cachedSpecs['disk'] ?? null) ? ($liveInfo?->disk ?? $cachedSpecs['disk']) . ' GB' : '-' }}
                                 </dd>
                             </div>
                             <div class="flex justify-between">
-                                <dt class="text-sm text-gray-500 dark:text-gray-400">Bandwidth</dt>
+                                <dt class="text-sm text-gray-500 dark:text-gray-400">{{ __('app.bandwidth') }}</dt>
                                 <dd class="text-sm font-medium text-gray-900 dark:text-gray-100">
                                     @php
                                         $bandwidth = $liveInfo?->bandwidth ?? $cachedSpecs['bandwidth'] ?? null;
@@ -125,27 +125,27 @@
                                 </dd>
                             </div>
                             <div class="flex justify-between">
-                                <dt class="text-sm text-gray-500 dark:text-gray-400">Status</dt>
+                                <dt class="text-sm text-gray-500 dark:text-gray-400">{{ __('app.status') }}</dt>
                                 <dd>
                                     @if($status === 1)
                                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                                            Running
+                                            {{ __('app.running') }}
                                         </span>
                                     @elseif($status === 0)
                                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
-                                            Stopped
+                                            {{ __('app.stopped') }}
                                         </span>
                                     @else
                                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
-                                            Unknown
+                                            {{ __('app.unknown') }}
                                         </span>
                                     @endif
                                 </dd>
                             </div>
                             <div class="flex justify-between">
-                                <dt class="text-sm text-gray-500 dark:text-gray-400">Server</dt>
+                                <dt class="text-sm text-gray-500 dark:text-gray-400">{{ __('app.server_name') }}</dt>
                                 <dd class="text-sm font-medium text-gray-900 dark:text-gray-100">
-                                    {{ $natVps->server?->name ?? 'No Server' }}
+                                    {{ $natVps->server?->name ?? __('app.no_data') }}
                                 </dd>
                             </div>
                         </dl>
@@ -155,40 +155,40 @@
                 <!-- SSH Credentials Card -->
                 <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6">
-                        <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">SSH Credentials</h3>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">{{ __('app.ssh_credentials') }}</h3>
                         <dl class="space-y-3">
                             <div class="flex justify-between">
-                                <dt class="text-sm text-gray-500 dark:text-gray-400">Username</dt>
+                                <dt class="text-sm text-gray-500 dark:text-gray-400">{{ __('app.ssh_username') }}</dt>
                                 <dd class="text-sm font-medium text-gray-900 dark:text-gray-100 font-mono">
-                                    {{ $natVps->ssh_username ?? 'Not set' }}
+                                    {{ $natVps->ssh_username ?? __('app.no_data') }}
                                 </dd>
                             </div>
                             <div class="flex justify-between items-center">
-                                <dt class="text-sm text-gray-500 dark:text-gray-400">Password</dt>
+                                <dt class="text-sm text-gray-500 dark:text-gray-400">{{ __('app.ssh_password') }}</dt>
                                 <dd class="text-sm font-medium text-gray-900 dark:text-gray-100">
                                     @if($natVps->ssh_password)
                                         <span x-data="{ show: false }">
                                             <span x-show="!show" class="font-mono">••••••••</span>
                                             <span x-show="show" class="font-mono">{{ $natVps->ssh_password }}</span>
                                             <button type="button" @click="show = !show" class="ml-2 text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 text-xs">
-                                                <span x-show="!show">Show</span>
-                                                <span x-show="show">Hide</span>
+                                                <span x-show="!show">{{ __('app.show') }}</span>
+                                                <span x-show="show">{{ __('app.hide') }}</span>
                                             </button>
                                         </span>
                                     @else
-                                        Not set
+                                        {{ __('app.no_data') }}
                                     @endif
                                 </dd>
                             </div>
                             <div class="flex justify-between">
-                                <dt class="text-sm text-gray-500 dark:text-gray-400">SSH Port</dt>
+                                <dt class="text-sm text-gray-500 dark:text-gray-400">{{ __('app.ssh_port') }}</dt>
                                 <dd class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ $natVps->ssh_port ?? 22 }}</dd>
                             </div>
                         </dl>
 
                         @if($natVps->ssh_username && $natVps->server)
                             <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                                <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">SSH Command:</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">{{ __('app.ssh_command') }}:</p>
                                 <code class="block p-2 bg-gray-100 dark:bg-gray-700 rounded text-sm font-mono text-gray-800 dark:text-gray-200 break-all">
                                     ssh {{ $natVps->ssh_username . '@' . $natVps->server->ip_address }} -p {{ $natVps->ssh_port ?? 22 }}
                                 </code>
@@ -203,12 +203,12 @@
                 <!-- Power Actions Card -->
                 <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg md:col-span-2">
                     <div class="p-6">
-                        <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Power Actions</h3>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">{{ __('app.power_actions') }}</h3>
                         
                         @if($apiOffline)
                             <div class="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg mb-4">
                                 <p class="text-sm text-yellow-700 dark:text-yellow-300">
-                                    Power actions are disabled while the API is offline.
+                                    {{ __('app.power_actions_disabled') }}
                                 </p>
                             </div>
                         @endif
@@ -225,7 +225,7 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                     </svg>
-                                    Start
+                                    {{ __('app.start') }}
                                 </button>
                             </div>
 
@@ -240,7 +240,7 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/>
                                     </svg>
-                                    Stop
+                                    {{ __('app.stop') }}
                                 </button>
                             </div>
 
@@ -254,7 +254,7 @@
                                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
                                     </svg>
-                                    Restart
+                                    {{ __('app.restart') }}
                                 </button>
                             </div>
 
@@ -268,7 +268,7 @@
                                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
                                     </svg>
-                                    Power Off
+                                    {{ __('app.power_off') }}
                                 </button>
                             </div>
 
@@ -309,11 +309,11 @@
                                                 </div>
                                                 <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
                                                     <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100" id="modal-title">
-                                                        Confirm Action
+                                                        {{ __('app.confirm_action') }}
                                                     </h3>
                                                     <div class="mt-2">
                                                         <p class="text-sm text-gray-500 dark:text-gray-400">
-                                                            Are you sure you want to <span x-text="confirmAction" class="font-semibold"></span> this VPS?
+                                                            {{ __('app.confirm_power_action') }}
                                                         </p>
                                                     </div>
                                                 </div>
@@ -324,13 +324,13 @@
                                                 @csrf
                                                 <button type="submit" 
                                                         class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm">
-                                                    Confirm
+                                                    {{ __('app.confirm') }}
                                                 </button>
                                             </form>
                                             <button type="button" 
                                                     @click="confirmAction = null"
                                                     class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
-                                                Cancel
+                                                {{ __('app.cancel') }}
                                             </button>
                                         </div>
                                     </div>
@@ -344,18 +344,18 @@
                 <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg md:col-span-2">
                     <div class="p-6">
                         <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Domain Forwardings</h3>
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">{{ __('app.domain_forwarding') }}</h3>
                             <a href="{{ route('user.vps.domain-forwarding.index', $natVps) }}" 
                                class="inline-flex items-center px-3 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700">
                                 <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                                 </svg>
-                                Manage
+                                {{ __('app.edit') }}
                             </a>
                         </div>
                         <p class="text-sm text-gray-600 dark:text-gray-400">
-                            Configure port forwarding (TCP) and domain forwarding (HTTP/HTTPS) rules for your VPS.
+                            {{ __('app.domain_forwarding_desc') }}
                         </p>
                     </div>
                 </div>
