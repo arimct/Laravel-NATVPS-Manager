@@ -184,6 +184,7 @@ php artisan key:generate
 # Database
 php artisan migrate
 php artisan db:seed
+php artisan storage:link  
 
 # Build assets
 npm run build
